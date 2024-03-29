@@ -31,41 +31,6 @@ bool InitGLAD()
 	return error_code == 1;
 }
 
-ShaderProgram* CreateShaderProgram()
-{
-	const char* vertexShaderSource = "#version 460 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-
-		"out vec4 vertexColor;\n"
-
-		"void main()\n"
-		"{\n"
-		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"vertexColor = vec4(0.5, 0, 0, 1);\n"
-		"}\0";
-	const char* fragmentShaderSource1 = "#version 460 core\n"
-		"out vec4 FragColor;\n"
-		"in vec4 vertexColor;\n"
-		"uniform vec4 ourColor;\n"
-		"void main()\n"
-		"{\n"
-		"FragColor = ourColor ;\n"
-		"}\0";
-
-	Shader vertex_shader = Shader(&vertexShaderSource, ShaderType::Vertex);
-	Shader* fragment_shader = new  Shader(&fragmentShaderSource1, ShaderType::Fragment);
-	
-	vertex_shader.CheckCompileSuccess();
-	fragment_shader->CheckCompileSuccess();
-
-	ShaderProgram* shaderProgram = new  ShaderProgram();
-	shaderProgram->AttachShader(vertex_shader);
-	shaderProgram->AttachShader(*fragment_shader);
-	shaderProgram->Link();
-
-	return shaderProgram;
-}
-
 /// <summary>
 /// 当用户改变窗口的大小的时候，视口也应该被调整
 /// </summary>
@@ -107,12 +72,13 @@ int main()
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
-	ShaderProgram* shaderProgram = CreateShaderProgram();
+	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
 	
 	float vertices_1[] = {
-		0.5f, 0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 -0.5f, -0.5f, 0.0f
+		// 位置						颜色
+		0.5f, 0.5f, 0.0f,			1.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
+		 -0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f
 	};
 
 	// 顶点数组vertices的下标, 注意索引从0开始
@@ -147,9 +113,12 @@ int main()
 
 		每个顶点属性从一个VBO管理的内存中获得它的数据，而具体是从哪个VBO（程序中可以有多个VBO）获取则是通过在调用glVertexAttribPointer时绑定到GL_ARRAY_BUFFER的VBO决定的
 	*/
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	// glEnableVertexAttribArray以顶点属性位置值作为参数，启用顶点属性；顶点属性默认是禁用的
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// 绑定EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
@@ -174,12 +143,13 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
 		
-		float timeValue = glfwGetTime();
-		float greenValue = (std::sin(timeValue) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(shaderProgram->GetID(), "ourColor");
+		//float timeValue = glfwGetTime();
+		//float greenValue = (std::sin(timeValue) / 2.0f) + 0.5f;
+		//int vertexColorLocation = glGetUniformLocation(shaderProgram->GetID(), "ourColor");
 		shaderProgram->Use();
-		// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
+
+		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
+		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
 
 
 		glBindVertexArray(VAO[0]);

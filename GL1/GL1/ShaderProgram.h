@@ -18,6 +18,8 @@ class ShaderProgram
 			ID = glCreateProgram();
 		}
 
+		ShaderProgram(const char* vert_source_path, const char* frag_source_path);
+
 		~ShaderProgram()
 		{
 			glDeleteProgram(ID);
@@ -29,7 +31,6 @@ class ShaderProgram
 		/// <param name="shader"></param>
 		void AttachShader(const Shader &shader)
 		{
-			
 			glAttachShader(ID, shader.GetID());
 		}
 
@@ -41,19 +42,7 @@ class ShaderProgram
 			glLinkProgram(ID);
 		}
 
-		bool CheckLinkSuccess()
-		{
-			int success;
-			glGetProgramiv(ID, GL_LINK_STATUS, &success);
-			if (!success)
-			{
-				char infoLog[512];
-				// 用glGetShaderInfoLog获取错误消息，然后打印
-				glGetProgramInfoLog(ID, 512, NULL, infoLog);
-				std::cout << "ERROR::SHADER_PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
-			}
-			return success;
-		}
+		bool CheckLinkSuccess();
 
 		/// <summary>
 		/// 激活程序对象
