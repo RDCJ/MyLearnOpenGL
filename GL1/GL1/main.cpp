@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cmath>
 #include "ShaderProgram.h"
+#include "stb_image.h"
+#include "Texture2D.h"
 
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
@@ -76,14 +78,16 @@ int main()
 	
 	float vertices_1[] = {
 		// 位置						颜色
-		0.5f, 0.5f, 0.0f,			1.0f, 0.0f, 0.0f,
-		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
-		 -0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f
+		0.5f, 0.5f, 0.0f,			1.0f, 0.0f, 0.0f,		1.0f, 1.0f,
+		 0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 0.0f,
+		 -0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f, 
+		 -0.5f, 0.5f, 0.0f,		1.0f, 1.0f, 1.0f,		0.0f, 1.0f
 	};
 
 	// 顶点数组vertices的下标, 注意索引从0开始
 	unsigned int indices_1[] = {
-		0, 1, 2 // 第一个三角形
+		0, 1, 3, // 第一个三角形
+		1, 2, 3
 	};
 
 	unsigned int VBO[2], VAO[2];
@@ -108,22 +112,33 @@ int main()
 		第二个参数指定顶点属性的大小
 		第三个参数指定数据的类型
 		第四个参数定义我们是否希望数据被标准化。如果设置为GL_TRUE，所有数据都会被映射到0（对于有符号型signed数据是-1）到1之间
-		第五个参数叫做步长(Stride)，它告诉我们在连续的顶点属性组之间的间隔，简单说就是从这个属性第二次出现的地方到整个数组0位置之间有多少字节
+		第五个参数叫做步长(Stride)，它告诉我们在连续的顶点属性组之间的间隔，简单说就是从这个属性第二次出现的位置到第一次出现的位置之间有多少字节
 		最后一个参数表示位置数据在缓冲中起始位置的偏移量，类型是void*，所以需要进行强制类型转换
 
 		每个顶点属性从一个VBO管理的内存中获得它的数据，而具体是从哪个VBO（程序中可以有多个VBO）获取则是通过在调用glVertexAttribPointer时绑定到GL_ARRAY_BUFFER的VBO决定的
 	*/
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	// glEnableVertexAttribArray以顶点属性位置值作为参数，启用顶点属性；顶点属性默认是禁用的
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// 绑定EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
 	// 把索引复制到缓冲
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_1), indices_1, GL_STATIC_DRAW);
+
+	Texture2D texture1 = Texture2D("Image/container.jpg");
+	texture1.SetParameters();
+	texture1.GenerateMipmap();
+
+	Texture2D texture2 = Texture2D("Image/awesomeface.png");
+	texture2.SetParameters();
+	texture2.GenerateMipmap();
 
 	// glBindVertexArray传入0表示解绑当前的VAO
 	// 当绑定一个VAO时，之前绑定的VAO会自动解绑，所以通常不需要手动解绑一个VAO
@@ -141,17 +156,23 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
-		
+		// 一个纹理的位置值通常称为一个纹理单元(Texture Unit)
+		// glActiveTexture激活纹理单元, 接下来的glBindTexture函数调用会绑定这个纹理到当前激活的纹理单元
+		glActiveTexture(GL_TEXTURE0);
+		texture1.Bind();
+		glActiveTexture(GL_TEXTURE1);
+		texture2.Bind();
+
 		//float timeValue = glfwGetTime();
 		//float greenValue = (std::sin(timeValue) / 2.0f) + 0.5f;
 		//int vertexColorLocation = glGetUniformLocation(shaderProgram->GetID(), "ourColor");
 		shaderProgram->Use();
 
-		shaderProgram->SetUniformFloat("x_offset", 0.2f);
+		shaderProgram->SetUniformInt("texture1", 0);
+		shaderProgram->SetUniformInt("texture2", 1);
 
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
-
 
 		glBindVertexArray(VAO[0]);
 
@@ -161,7 +182,7 @@ int main()
 		// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
 		// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
 		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
