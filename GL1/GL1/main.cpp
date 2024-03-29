@@ -75,9 +75,15 @@ int main()
 	float vertices[] = {
 		0.5f, 0.5f, 0.0f,
 		 0.5f, -0.5f, 0.0f,
-		 -0.5f, -0.5f, 0.0f
+		 -0.5f, -0.5f, 0.0f,
+		 -0.5f, 0.5f, 0.0f
 	};
 
+	// 顶点数组vertices的下标, 注意索引从0开始
+	unsigned int indices[] = {
+		0, 1, 3, // 第一个三角形
+		1, 2, 3 // 第二个三角形
+	};
 
 	unsigned int VBO, VAO;
 
@@ -105,6 +111,14 @@ int main()
 	// glEnableVertexAttribArray以顶点属性位置值作为参数，启用顶点属性；顶点属性默认是禁用的
 	glEnableVertexAttribArray(0);
 
+	// EBO是一个缓冲区，就像一个顶点缓冲区对象一样，它存储 OpenGL 用来决定要绘制哪些顶点的索引
+	unsigned int EBO;
+	// 创建元素缓冲对象
+	glGenBuffers(1, &EBO);
+	// 绑定EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	// 把索引复制到缓冲
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	const char* vertexShaderSource = "#version 460 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
@@ -128,6 +142,10 @@ int main()
 	shaderProgram.AttachShader(vertex_shader);
 	shaderProgram.AttachShader(fragment_shader);
 	shaderProgram.Link();
+
+	// glBindVertexArray传入0表示解绑当前的VAO
+	// 当绑定一个VAO时，之前绑定的VAO会自动解绑，所以通常不需要手动解绑一个VAO
+	glBindVertexArray(0);
 	
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -143,8 +161,17 @@ int main()
 		
 		shaderProgram.Use();
 		glBindVertexArray(VAO);
+
+		/*
 		//glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 		glDrawArrays(GL_TRIANGLES, 0, 3);
+		*/
+
+		// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
+		// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
+		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
 		// glfwPollEvents函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数

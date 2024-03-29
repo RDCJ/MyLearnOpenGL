@@ -18,6 +18,11 @@ class ShaderProgram
 			ID = glCreateProgram();
 		}
 
+		~ShaderProgram()
+		{
+			glDeleteProgram(ID);
+		}
+
 		/// <summary>
 		/// 着色器附加到程序对象上
 		/// </summary>
