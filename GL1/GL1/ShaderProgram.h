@@ -69,7 +69,7 @@ class ShaderProgram
 
 		int GetUniformLocation(const char* name) const
 		{
-			glGetUniformLocation(ID, name);
+			return glGetUniformLocation(ID, name);
 		}
 
 	private:
