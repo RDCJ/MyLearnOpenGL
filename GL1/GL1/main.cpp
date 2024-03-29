@@ -147,6 +147,8 @@ int main()
 		//int vertexColorLocation = glGetUniformLocation(shaderProgram->GetID(), "ourColor");
 		shaderProgram->Use();
 
+		shaderProgram->SetUniformFloat("x_offset", 0.2f);
+
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
 
