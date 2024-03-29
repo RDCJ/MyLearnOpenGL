@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 #include <iostream>
+#include <cmath>
 #include "ShaderProgram.h"
 
 const int ScreenWidth = 800;
@@ -30,35 +31,30 @@ bool InitGLAD()
 	return error_code == 1;
 }
 
-ShaderProgram* CreateShaderProgram(int x)
+ShaderProgram* CreateShaderProgram()
 {
 	const char* vertexShaderSource = "#version 460 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
+
+		"out vec4 vertexColor;\n"
+
 		"void main()\n"
 		"{\n"
 		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"vertexColor = vec4(0.5, 0, 0, 1);\n"
 		"}\0";
 	const char* fragmentShaderSource1 = "#version 460 core\n"
 		"out vec4 FragColor;\n"
+		"in vec4 vertexColor;\n"
+		"uniform vec4 ourColor;\n"
 		"void main()\n"
 		"{\n"
-		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
+		"FragColor = ourColor ;\n"
 		"}\0";
-	const char* fragmentShaderSource2 = "#version 460 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"FragColor = vec4(0.0f, 1f, 1f, 1.0);\n"
-		"}\0";
-
 
 	Shader vertex_shader = Shader(&vertexShaderSource, ShaderType::Vertex);
-	Shader* fragment_shader = nullptr;
-	if (x == 0)
-		fragment_shader = new Shader(&fragmentShaderSource1, ShaderType::Fragment);
-	else
-		fragment_shader = new Shader(&fragmentShaderSource2, ShaderType::Fragment);
-
+	Shader* fragment_shader = new  Shader(&fragmentShaderSource1, ShaderType::Fragment);
+	
 	vertex_shader.CheckCompileSuccess();
 	fragment_shader->CheckCompileSuccess();
 
@@ -111,26 +107,16 @@ int main()
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
-	ShaderProgram* shaderProgram0 = CreateShaderProgram(0);
-	ShaderProgram* shaderProgram1 = CreateShaderProgram(1);
+	ShaderProgram* shaderProgram = CreateShaderProgram();
 	
 	float vertices_1[] = {
 		0.5f, 0.5f, 0.0f,
 		 0.5f, -0.5f, 0.0f,
 		 -0.5f, -0.5f, 0.0f
 	};
-	float vertices_2[] = {
-		0.5f, 0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 -0.5f, 0.5f, 0.0f
-	};
 
 	// 顶点数组vertices的下标, 注意索引从0开始
 	unsigned int indices_1[] = {
-		0, 1, 2 // 第一个三角形
-	};
-	// 顶点数组vertices的下标, 注意索引从0开始
-	unsigned int indices_2[] = {
 		0, 1, 2 // 第一个三角形
 	};
 
@@ -168,19 +154,7 @@ int main()
 	// 绑定EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
 	// 把索引复制到缓冲
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_1), indices_2, GL_STATIC_DRAW);
-
-
-	glBindVertexArray(VAO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_2), vertices_2, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	// 绑定EBO
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
-	// 把索引复制到缓冲
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_2), indices_2, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_1), indices_1, GL_STATIC_DRAW);
 
 	// glBindVertexArray传入0表示解绑当前的VAO
 	// 当绑定一个VAO时，之前绑定的VAO会自动解绑，所以通常不需要手动解绑一个VAO
@@ -199,7 +173,15 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
-		shaderProgram0->Use();
+		
+		float timeValue = glfwGetTime();
+		float greenValue = (std::sin(timeValue) / 2.0f) + 0.5f;
+		int vertexColorLocation = glGetUniformLocation(shaderProgram->GetID(), "ourColor");
+		shaderProgram->Use();
+		// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
+
+
 		glBindVertexArray(VAO[0]);
 
 		////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
@@ -208,11 +190,6 @@ int main()
 		// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
 		// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
 		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-
-
-		shaderProgram1->Use();
-		glBindVertexArray(VAO[1]);
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
