@@ -30,7 +30,7 @@ bool InitGLAD()
 	return error_code == 1;
 }
 
-ShaderProgram* CreateShaderProgram()
+ShaderProgram* CreateShaderProgram(int x)
 {
 	const char* vertexShaderSource = "#version 460 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
@@ -38,21 +38,33 @@ ShaderProgram* CreateShaderProgram()
 		"{\n"
 		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 		"}\0";
-	const char* fragmentShaderSource = "#version 460 core\n"
+	const char* fragmentShaderSource1 = "#version 460 core\n"
 		"out vec4 FragColor;\n"
 		"void main()\n"
 		"{\n"
 		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
 		"}\0";
+	const char* fragmentShaderSource2 = "#version 460 core\n"
+		"out vec4 FragColor;\n"
+		"void main()\n"
+		"{\n"
+		"FragColor = vec4(0.0f, 1f, 1f, 1.0);\n"
+		"}\0";
+
+
 	Shader vertex_shader = Shader(&vertexShaderSource, ShaderType::Vertex);
-	Shader fragment_shader = Shader(&fragmentShaderSource, ShaderType::Fragment);
+	Shader* fragment_shader = nullptr;
+	if (x == 0)
+		fragment_shader = new Shader(&fragmentShaderSource1, ShaderType::Fragment);
+	else
+		fragment_shader = new Shader(&fragmentShaderSource2, ShaderType::Fragment);
 
 	vertex_shader.CheckCompileSuccess();
-	fragment_shader.CheckCompileSuccess();
+	fragment_shader->CheckCompileSuccess();
 
 	ShaderProgram* shaderProgram = new  ShaderProgram();
 	shaderProgram->AttachShader(vertex_shader);
-	shaderProgram->AttachShader(fragment_shader);
+	shaderProgram->AttachShader(*fragment_shader);
 	shaderProgram->Link();
 
 	return shaderProgram;
@@ -99,7 +111,8 @@ int main()
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
-	ShaderProgram* shaderProgram = CreateShaderProgram();
+	ShaderProgram* shaderProgram0 = CreateShaderProgram(0);
+	ShaderProgram* shaderProgram1 = CreateShaderProgram(1);
 	
 	float vertices_1[] = {
 		0.5f, 0.5f, 0.0f,
@@ -186,7 +199,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
-		shaderProgram->Use();
+		shaderProgram0->Use();
 		glBindVertexArray(VAO[0]);
 
 		////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
@@ -197,6 +210,8 @@ int main()
 		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
+
+		shaderProgram1->Use();
 		glBindVertexArray(VAO[1]);
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
