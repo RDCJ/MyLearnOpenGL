@@ -30,6 +30,34 @@ bool InitGLAD()
 	return error_code == 1;
 }
 
+ShaderProgram* CreateShaderProgram()
+{
+	const char* vertexShaderSource = "#version 460 core\n"
+		"layout (location = 0) in vec3 aPos;\n"
+		"void main()\n"
+		"{\n"
+		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"}\0";
+	const char* fragmentShaderSource = "#version 460 core\n"
+		"out vec4 FragColor;\n"
+		"void main()\n"
+		"{\n"
+		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
+		"}\0";
+	Shader vertex_shader = Shader(&vertexShaderSource, ShaderType::Vertex);
+	Shader fragment_shader = Shader(&fragmentShaderSource, ShaderType::Fragment);
+
+	vertex_shader.CheckCompileSuccess();
+	fragment_shader.CheckCompileSuccess();
+
+	ShaderProgram* shaderProgram = new  ShaderProgram();
+	shaderProgram->AttachShader(vertex_shader);
+	shaderProgram->AttachShader(fragment_shader);
+	shaderProgram->Link();
+
+	return shaderProgram;
+}
+
 /// <summary>
 /// 当用户改变窗口的大小的时候，视口也应该被调整
 /// </summary>
@@ -71,34 +99,44 @@ int main()
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
+	ShaderProgram* shaderProgram = CreateShaderProgram();
 	
-	float vertices[] = {
+	float vertices_1[] = {
 		0.5f, 0.5f, 0.0f,
 		 0.5f, -0.5f, 0.0f,
-		 -0.5f, -0.5f, 0.0f,
-		  
-		 -0.5f, -0.5f, 0.0f,
-		-0.5f, 0.5f, 0.0f,
-		-0.8f, -0.5f, 0.0f
+		 -0.5f, -0.5f, 0.0f
+	};
+	float vertices_2[] = {
+		0.5f, 0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 -0.5f, 0.5f, 0.0f
 	};
 
-	//// 顶点数组vertices的下标, 注意索引从0开始
-	//unsigned int indices[] = {
-	//	0, 1, 3, // 第一个三角形
-	//	1, 2, 3 // 第二个三角形
-	//};
+	// 顶点数组vertices的下标, 注意索引从0开始
+	unsigned int indices_1[] = {
+		0, 1, 2 // 第一个三角形
+	};
+	// 顶点数组vertices的下标, 注意索引从0开始
+	unsigned int indices_2[] = {
+		0, 1, 2 // 第一个三角形
+	};
 
-	unsigned int VBO, VAO;
+	unsigned int VBO[2], VAO[2];
 
 	// glGenBuffers函数用来生成缓冲区对象的名称, 第一个参数是要生成的缓冲对象的数量，第二个参数是用来存储缓冲对象名称的数组
-	glGenBuffers(1, &VBO);
+	glGenBuffers(2, VBO);
+	glGenVertexArrays(2, VAO);
 
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	// EBO是一个缓冲区，就像一个顶点缓冲区对象一样，它存储 OpenGL 用来决定要绘制哪些顶点的索引
+	unsigned int EBO[2];
+	// 创建元素缓冲对象
+	glGenBuffers(2, EBO);
+
+	glBindVertexArray(VAO[0]);
 	// glBindBuffer函数把新创建的缓冲绑定到GL_ARRAY_BUFFER目标上
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 	// glBufferData用来把用户定义的数据复制到当前绑定缓冲
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_1), vertices_1, GL_STATIC_DRAW);
 	/*
 		glVertexAttribPointer函数告诉OpenGL该如何解析顶点数据
 		第一个参数指定我们要配置的顶点属性, 对应顶点着色器中的 layout (location == ?)
@@ -114,41 +152,27 @@ int main()
 	// glEnableVertexAttribArray以顶点属性位置值作为参数，启用顶点属性；顶点属性默认是禁用的
 	glEnableVertexAttribArray(0);
 
-	//// EBO是一个缓冲区，就像一个顶点缓冲区对象一样，它存储 OpenGL 用来决定要绘制哪些顶点的索引
-	//unsigned int EBO;
-	//// 创建元素缓冲对象
-	//glGenBuffers(1, &EBO);
-	//// 绑定EBO
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//// 把索引复制到缓冲
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// 绑定EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
+	// 把索引复制到缓冲
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_1), indices_2, GL_STATIC_DRAW);
 
-	const char* vertexShaderSource = "#version 460 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main()\n"
-		"{\n"
-		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"}\0";
-	const char* fragmentShaderSource = "#version 460 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
-		"}\0";
-	Shader vertex_shader = Shader(&vertexShaderSource, ShaderType::Vertex);
-	Shader fragment_shader = Shader(&fragmentShaderSource, ShaderType::Fragment);
 
-	vertex_shader.CheckCompileSuccess();
-	fragment_shader.CheckCompileSuccess();
+	glBindVertexArray(VAO[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_2), vertices_2, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
-	ShaderProgram shaderProgram = ShaderProgram();
-	shaderProgram.AttachShader(vertex_shader);
-	shaderProgram.AttachShader(fragment_shader);
-	shaderProgram.Link();
+	// 绑定EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
+	// 把索引复制到缓冲
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_2), indices_2, GL_STATIC_DRAW);
 
 	// glBindVertexArray传入0表示解绑当前的VAO
 	// 当绑定一个VAO时，之前绑定的VAO会自动解绑，所以通常不需要手动解绑一个VAO
 	glBindVertexArray(0);
+
 	
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -162,18 +186,19 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
-		shaderProgram.Use();
-		glBindVertexArray(VAO);
+		shaderProgram->Use();
+		glBindVertexArray(VAO[0]);
 
+		////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
 		
-		//glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+		// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
+		// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
+		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
-		//// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
-		//// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
-		//// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(VAO[1]);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
