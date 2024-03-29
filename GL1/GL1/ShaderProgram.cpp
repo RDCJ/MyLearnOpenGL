@@ -14,6 +14,7 @@ ShaderProgram::ShaderProgram(const char* vert_source_path, const char* frag_sour
 		AttachShader(vertex_shader);
 		AttachShader(frag_shader);
 		Link();
+		CheckLinkSuccess();
 	}
 }
 

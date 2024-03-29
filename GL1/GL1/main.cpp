@@ -129,7 +129,6 @@ int main()
 	// 当绑定一个VAO时，之前绑定的VAO会自动解绑，所以通常不需要手动解绑一个VAO
 	glBindVertexArray(0);
 
-	
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
 	while (!glfwWindowShouldClose(window))
