@@ -9,6 +9,9 @@
 #include "ShaderProgram.h"
 #include "stb_image.h"
 #include "Texture2D.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
@@ -55,6 +58,12 @@ void ProcessInput(GLFWwindow* window)
 
 int main() 
 {
+	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
+	glm::mat4 trans = glm::mat4(2.0f);
+	trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+	vec = trans * vec;
+	std::cout << vec.x << vec.y << vec.z << std::endl;
+
 	InitGLFW();
 	
 	// glfwCreateWindow函数需要窗口的宽和高作为它的前两个参数。第三个参数表示这个窗口的名称（标题）
