@@ -146,9 +146,16 @@ int main()
 
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
+
+	float mix_param = 0;
 	while (!glfwWindowShouldClose(window))
 	{
 		ProcessInput(window);
+
+		if (glfwGetKey(window, GLFW_KEY_UP))
+			mix_param = std::min(mix_param + 0.01f, 1.0f);
+		else if (glfwGetKey(window, GLFW_KEY_DOWN))
+			mix_param = std::max(mix_param - 0.01f, 0.0f);
 
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
 		glClearColor(0.2f, 0.3f, 0.3f, 0.9f);
@@ -170,6 +177,8 @@ int main()
 
 		shaderProgram->SetUniformInt("texture1", 0);
 		shaderProgram->SetUniformInt("texture2", 1);
+
+		shaderProgram->SetUniformFloat("mix_param", mix_param);
 
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
