@@ -16,6 +16,7 @@
 #include "Texture2D.h"
 #include "Model.h"
 #include "Camera.h"
+#include "Time.h"
 
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
@@ -83,7 +84,7 @@ int main()
 
 	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
 
-	Camera camera = Camera();
+	Camera camera = Camera(window);
 
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -205,7 +206,8 @@ int main()
 	// 启用深度测试，需要开启GL_DEPTH_TEST
 	glEnable(GL_DEPTH_TEST);
 
-	
+	Time::Init();
+
 	float mix_param = 0;
 	float fov = 45.0f;
 	float aspect_ratio = (float)ScreenWidth / ScreenHeight;
@@ -216,6 +218,8 @@ int main()
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
 	while (!glfwWindowShouldClose(window))
 	{
+		Time::Update();
+
 		ProcessInput(window);
 
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
@@ -258,7 +262,7 @@ int main()
 #pragma region MVP
 		// mvp
 		
-		glm::mat4 view = camera.GetView(glm::vec3(0, 0, 0));
+		glm::mat4 view = camera.GetView();
 		glm::mat4 projection = glm::mat4(1.0f);
 		
 

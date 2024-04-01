@@ -1,7 +1,9 @@
 #include "Camera.h"
 
-Camera::Camera()
+Camera::Camera(GLFWwindow* _window)
 {
+	this->window = _window;
+
 	position = glm::vec3(0.0f, 0.0f, 3.0f);
 	
 	glm::vec3 target = glm::vec3(0, 0, 0);
@@ -14,22 +16,38 @@ Camera::Camera()
 	up = glm::cross(direction, right);
 }
 
-glm::mat4 Camera::GetView(const glm::vec3 &target)
+glm::mat4 Camera::GetView()
 {
 	// LookAt矩阵: 创建一个看着(Look at)给定目标的观察矩阵
 	// 第一个参数：摄像机位置
 	// 第二个参数：目标位置
-	// 第三个参数：表示世界空间中的上向量的向量
+	// 第三个参数：上向量
 	return glm::lookAt(
-		position, target, glm::vec3(0, 1, 0)
+		position, position - direction, this->up
 	);
+}
 
+glm::mat4 Camera::GetView(const glm::vec3 &target)
+{
+	direction = glm::normalize(position - target);
+	return this->GetView();
 }
 
 void Camera::Update()
 {
-	float radius = 10.0f;
+	//float radius = 10.0f;
 
-	position.x = std::sin(glfwGetTime()) * radius;
-	position.z = std::cos(glfwGetTime()) * radius;
+	//position.x = std::sin(glfwGetTime()) * radius;
+	//position.z = std::cos(glfwGetTime()) * radius;
+
+	float move_speed = 1.0f;
+
+	if (glfwGetKey(window, GLFW_KEY_W))
+		position -= move_speed * Time::deltaTime * direction;
+	else if (glfwGetKey(window, GLFW_KEY_S))
+		position += move_speed * Time::deltaTime * direction;
+	else if (glfwGetKey(window, GLFW_KEY_D))
+		position += move_speed * Time::deltaTime * glm::normalize(glm::cross(up, direction));
+	else if (glfwGetKey(window, GLFW_KEY_A))
+		position -= move_speed * Time::deltaTime * glm::normalize(glm::cross(up, direction));
 }
