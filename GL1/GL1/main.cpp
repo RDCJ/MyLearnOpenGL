@@ -21,6 +21,10 @@
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
 
+Camera* camera = nullptr;
+bool firstMouse = true;
+glm::vec2 mouseLastPos = 0.5f * glm::vec2(ScreenWidth, ScreenHeight);
+
 void InitGLFW()
 {
 	glfwInit();
@@ -61,6 +65,20 @@ void ProcessInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 }
 
+void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		firstMouse = false;
+		mouseLastPos = glm::vec2(xpos, ypos);
+	}
+	float xoffset = xpos - mouseLastPos.x;
+	float yoffset = mouseLastPos.y - ypos;
+	mouseLastPos.x = xpos;
+	mouseLastPos.y = ypos;
+	camera->OnMouseMove(xoffset, yoffset);
+}
+
 int main() 
 {
 	InitGLFW();
@@ -76,15 +94,21 @@ int main()
 	// 通知GLFW将我们窗口的上下文设置为当前线程的主上下文
 	glfwMakeContextCurrent(window);
 
+	// 告诉GLFW，它应该隐藏光标，并捕捉(Capture)它
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	// 注册函数，告诉GLFW我们希望每当窗口调整大小的时候调用这个函数
 	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+
+	// 注册回调函数，鼠标一移动MouseCallback函数就会被调用
+	glfwSetCursorPosCallback(window, MouseCallback);
 
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
 
-	Camera camera = Camera(window);
+	camera = new Camera(window);
 
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -136,16 +160,16 @@ int main()
 		indices_1[i] = i;
 
 	glm::vec3 cubePositions[] = {
-  glm::vec3(0.0f,  0.0f,  0.0f),
-  glm::vec3(2.0f,  5.0f, -15.0f),
-  glm::vec3(-1.5f, -2.2f, -2.5f),
-  glm::vec3(-3.8f, -2.0f, -12.3f),
-  glm::vec3(2.4f, -0.4f, -3.5f),
-  glm::vec3(-1.7f,  3.0f, -7.5f),
-  glm::vec3(1.3f, -2.0f, -2.5f),
-  glm::vec3(1.5f,  2.0f, -2.5f),
-  glm::vec3(1.5f,  0.2f, -1.5f),
-  glm::vec3(-1.3f,  1.0f, -1.5f)
+	  glm::vec3(0.0f,  0.0f,  0.0f),
+	  glm::vec3(2.0f,  5.0f, -15.0f),
+	  glm::vec3(-1.5f, -2.2f, -2.5f),
+	  glm::vec3(-3.8f, -2.0f, -12.3f),
+	  glm::vec3(2.4f, -0.4f, -3.5f),
+	  glm::vec3(-1.7f,  3.0f, -7.5f),
+	  glm::vec3(1.3f, -2.0f, -2.5f),
+	  glm::vec3(1.5f,  2.0f, -2.5f),
+	  glm::vec3(1.5f,  0.2f, -1.5f),
+	  glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
 	Model* model1 = new Model(36, vertices, 36* 5, indices_1, 36);
@@ -257,15 +281,13 @@ int main()
 		//else if (glfwGetKey(window, GLFW_KEY_R))
 		//	view_vec += glm::vec3(0, 0, 0.1f);
 
-		camera.Update();
+		camera->Update();
 		
 #pragma region MVP
 		// mvp
-		
-		glm::mat4 view = camera.GetView();
+		glm::mat4 view = camera->GetView();
 		glm::mat4 projection = glm::mat4(1.0f);
 		
-
 		//它的第一个参数定义了fov的值，它表示的是视野(Field of View)，并且设置了观察空间的大小。
 		// 如果想要一个真实的观察效果，它的值通常设置为45.0f，但想要一个末日风格的结果你可以将其设置一个更大的值。
 		// 第二个参数设置了宽高比: aspect-ratio，由视口的宽除以高所得。
