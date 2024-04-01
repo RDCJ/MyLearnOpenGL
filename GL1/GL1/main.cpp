@@ -1,17 +1,20 @@
 //请确认是在包含GLFW的头文件之前包含了GLAD的头文件。
 //GLAD的头文件包含了正确的OpenGL头文件（例如GL / gl.h），所以需要在其它依赖于OpenGL的头文件之前包含GLAD
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include "Shader.h"
 #include <iostream>
 #include <cmath>
-#include "ShaderProgram.h"
-#include "stb_image.h"
-#include "Texture2D.h"
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "ShaderProgram.h"
+#include "stb_image.h"
+#include "Shader.h"
+#include "Texture2D.h"
+#include "Model.h"
 
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
@@ -93,6 +96,8 @@ int main()
 		1, 2, 3
 	};
 
+	Model* model1 = new Model(4, vertices_1, 4 * 8, indices_1, 2 * 3);
+
 	unsigned int VBO[2], VAO[2];
 
 	// glGenBuffers函数用来生成缓冲区对象的名称, 第一个参数是要生成的缓冲对象的数量，第二个参数是用来存储缓冲对象名称的数组
@@ -107,8 +112,7 @@ int main()
 	glBindVertexArray(VAO[0]);
 	// glBindBuffer函数把新创建的缓冲绑定到GL_ARRAY_BUFFER目标上
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	// glBufferData用来把用户定义的数据复制到当前绑定缓冲
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_1), vertices_1, GL_STATIC_DRAW);
+	model1->BufferVertices();
 	/*
 		glVertexAttribPointer函数告诉OpenGL该如何解析顶点数据
 		第一个参数指定我们要配置的顶点属性, 对应顶点着色器中的 layout (location == ?)
@@ -132,8 +136,7 @@ int main()
 
 	// 绑定EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
-	// 把索引复制到缓冲
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_1), indices_1, GL_STATIC_DRAW);
+	model1->BufferIndices();
 
 	Texture2D texture1 = Texture2D("Image/container.jpg");
 	texture1.SetParameters();
@@ -161,14 +164,20 @@ int main()
 		else if (glfwGetKey(window, GLFW_KEY_DOWN))
 			mix_param = std::max(mix_param - 0.01f, 0.0f);
 
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-		// GLM使用弧度制，所以我们使用glm::radians将角度转化为弧度
-		trans = glm::rotate(trans, (float)(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
-		trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
-#pragma endregion
-
+		// mvp
+		glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
+		glm::mat4 view = glm::mat4(1.0f); // 将世界坐标空间变换到观察空间
+		glm::mat4 projection = glm::mat4(1.0f);
 		
+		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0, 0));
+		view = glm::translate(view, glm::vec3(0, 0, -3.0f));
+
+		//它的第一个参数定义了fov的值，它表示的是视野(Field of View)，并且设置了观察空间的大小。
+		// 如果想要一个真实的观察效果，它的值通常设置为45.0f，但想要一个末日风格的结果你可以将其设置一个更大的值。
+		// 第二个参数设置了宽高比，由视口的宽除以高所得。
+		// 第三和第四个参数设置了平截头体的近和远平面
+		projection = glm::perspective(glm::radians(45.0f), (float)ScreenWidth / ScreenHeight, 0.1f, 100.0f);
+#pragma endregion
 
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
 		glClearColor(0.2f, 0.3f, 0.3f, 0.9f);
@@ -193,7 +202,9 @@ int main()
 
 		shaderProgram->SetUniformFloat("mix_param", mix_param);
 
-		shaderProgram->SetUniformMat4f("transform", trans);
+		shaderProgram->SetUniformMat4f("model", model);
+		shaderProgram->SetUniformMat4f("view", view);
+		shaderProgram->SetUniformMat4f("projection", projection);
 
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
@@ -203,10 +214,7 @@ int main()
 		////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 		
-		// glDrawElements第一个参数指定了绘制的模式, 第二个参数是绘制顶点的个数。第三个参数是索引的数据类型。最后一个参数指定EBO中的偏移量
-		// glDrawElements函数从当前绑定到GL_ELEMENT_ARRAY_BUFFER目标的EBO中获取其索引
-		// 在绑定VAO时，绑定的最后一个元素缓冲区对象存储为VAO的元素缓冲区对象。然后，绑定到VAO也会自动绑定该EBO
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		model1->Draw();
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
