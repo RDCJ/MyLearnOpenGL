@@ -15,6 +15,7 @@
 #include "Shader.h"
 #include "Texture2D.h"
 #include "Model.h"
+#include "Camera.h"
 
 const int ScreenWidth = 800;
 const int ScreenHeight = 600;
@@ -81,6 +82,8 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
+
+	Camera camera = Camera();
 
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -227,38 +230,37 @@ int main()
 		else if (glfwGetKey(window, GLFW_KEY_X))
 			mix_param = std::max(mix_param - 0.01f, 0.0f);
 
-		if (glfwGetKey(window, GLFW_KEY_Q))
-			fov = std::min(fov + 0.2f, 100.0f);
-		else if (glfwGetKey(window, GLFW_KEY_W))
-			fov = std::max(fov - 0.2f, 0.0f);
+		//if (glfwGetKey(window, GLFW_KEY_Q))
+		//	fov = std::min(fov + 0.2f, 100.0f);
+		//else if (glfwGetKey(window, GLFW_KEY_W))
+		//	fov = std::max(fov - 0.2f, 0.0f);
 
-		if (glfwGetKey(window, GLFW_KEY_A))
-			aspect_ratio = std::min(aspect_ratio + 0.01f, 3.0f);
-		else if (glfwGetKey(window, GLFW_KEY_S))
-			aspect_ratio = std::max(aspect_ratio - 0.01f, 0.0f);
+		//if (glfwGetKey(window, GLFW_KEY_A))
+		//	aspect_ratio = std::min(aspect_ratio + 0.01f, 3.0f);
+		//else if (glfwGetKey(window, GLFW_KEY_S))
+		//	aspect_ratio = std::max(aspect_ratio - 0.01f, 0.0f);
 
-		if (glfwGetKey(window, GLFW_KEY_UP))
-			view_vec -= glm::vec3(0, 0.1f, 0);
-		else if (glfwGetKey(window, GLFW_KEY_DOWN))
-			view_vec += glm::vec3(0, 0.1f, 0);
-		else if (glfwGetKey(window, GLFW_KEY_RIGHT))
-			view_vec -= glm::vec3(0.1f, 0, 0);
-		else if (glfwGetKey(window, GLFW_KEY_LEFT))
-			view_vec += glm::vec3(0.1f, 0, 0);
-		else if (glfwGetKey(window, GLFW_KEY_E))
-			view_vec -= glm::vec3(0, 0, 0.1f);
-		else if (glfwGetKey(window, GLFW_KEY_R))
-			view_vec += glm::vec3(0, 0, 0.1f);
+		//if (glfwGetKey(window, GLFW_KEY_UP))
+		//	view_vec -= glm::vec3(0, 0.1f, 0);
+		//else if (glfwGetKey(window, GLFW_KEY_DOWN))
+		//	view_vec += glm::vec3(0, 0.1f, 0);
+		//else if (glfwGetKey(window, GLFW_KEY_RIGHT))
+		//	view_vec -= glm::vec3(0.1f, 0, 0);
+		//else if (glfwGetKey(window, GLFW_KEY_LEFT))
+		//	view_vec += glm::vec3(0.1f, 0, 0);
+		//else if (glfwGetKey(window, GLFW_KEY_E))
+		//	view_vec -= glm::vec3(0, 0, 0.1f);
+		//else if (glfwGetKey(window, GLFW_KEY_R))
+		//	view_vec += glm::vec3(0, 0, 0.1f);
+
+		camera.Update();
 		
-
-			
 #pragma region MVP
 		// mvp
 		
-		glm::mat4 view = glm::mat4(1.0f); // 将世界坐标空间变换到观察空间
+		glm::mat4 view = camera.GetView(glm::vec3(0, 0, 0));
 		glm::mat4 projection = glm::mat4(1.0f);
 		
-		view = glm::translate(view, view_vec);
 
 		//它的第一个参数定义了fov的值，它表示的是视野(Field of View)，并且设置了观察空间的大小。
 		// 如果想要一个真实的观察效果，它的值通常设置为45.0f，但想要一个末日风格的结果你可以将其设置一个更大的值。
