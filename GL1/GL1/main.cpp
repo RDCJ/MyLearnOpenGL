@@ -58,12 +58,6 @@ void ProcessInput(GLFWwindow* window)
 
 int main() 
 {
-	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
-	glm::mat4 trans = glm::mat4(2.0f);
-	trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
-	vec = trans * vec;
-	std::cout << vec.x << vec.y << vec.z << std::endl;
-
 	InitGLFW();
 	
 	// glfwCreateWindow函数需要窗口的宽和高作为它的前两个参数。第三个参数表示这个窗口的名称（标题）
@@ -161,10 +155,20 @@ int main()
 	{
 		ProcessInput(window);
 
+#pragma region 参数更新
 		if (glfwGetKey(window, GLFW_KEY_UP))
 			mix_param = std::min(mix_param + 0.01f, 1.0f);
 		else if (glfwGetKey(window, GLFW_KEY_DOWN))
 			mix_param = std::max(mix_param - 0.01f, 0.0f);
+
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		// GLM使用弧度制，所以我们使用glm::radians将角度转化为弧度
+		trans = glm::rotate(trans, (float)(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
+#pragma endregion
+
+		
 
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
 		glClearColor(0.2f, 0.3f, 0.3f, 0.9f);
@@ -188,6 +192,8 @@ int main()
 		shaderProgram->SetUniformInt("texture2", 1);
 
 		shaderProgram->SetUniformFloat("mix_param", mix_param);
+
+		shaderProgram->SetUniformMat4f("transform", trans);
 
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
