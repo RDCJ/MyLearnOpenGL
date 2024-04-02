@@ -214,9 +214,9 @@ int main()
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 	glm::vec3 cubeColor = glm::vec3(0.75164f, 0.60648f, 0.22648f);
 	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	glm::vec3 lightPosition = glm::vec3(1.2f, 3.0f, 2.0f);
+	glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
-	float round = 3;
+	float round = 2;
 	
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -236,7 +236,7 @@ int main()
 
 		camera->Update();
 
-		lightPosition = cubePosition + glm::vec3(std::cos(glfwGetTime()) * round, 3, std::sin(glfwGetTime()) * round);
+		lightPosition = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1, std::sin(glfwGetTime() * 2) * round);
 
 #pragma region MVP
 		// mvp

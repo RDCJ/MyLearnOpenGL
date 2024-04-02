@@ -2,8 +2,11 @@
 
 struct Material
 {
+    // 环境光反射率
     vec3 ambient;
+    // 漫反射率
     vec3 diffuse;
+    // 镜面反射率
     vec3 specular;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
