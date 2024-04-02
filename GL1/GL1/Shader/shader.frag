@@ -1,5 +1,14 @@
 #version 460 core
 
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
+    float shininess;
+};
+
 in vec3 FragPos;
 in vec3 Normal;
 
@@ -9,18 +18,12 @@ uniform vec3 viewPos;
 uniform vec3 lightPosition;
 uniform vec3 lightColor;
 uniform vec3 ourColor;
+uniform Material material;
 
 void main()
-{
-    // 环境光强度
-    float ambientStrength = 0.1;
-    // 镜面光照强度
-    float specularStrength = 0.5;
-    // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
-    float shininess = 32;
-    
+{   
     // 环境光照
-    vec3 ambient = ambientStrength * lightColor;
+    vec3 ambient = lightColor * material.ambient;
 
     // 漫反射光照：使物体上法线方向与光线方向越接近的片段能从光源处获得更多的亮度
     // 标准化
@@ -31,7 +34,7 @@ void main()
     // 如果两个向量之间的角度大于90度，点乘的结果就会变成负数，这样会导致漫反射分量变为负数
     // 一般来说，物体表面只反射照在正面的光线，因此排除负数的情况
     float diffuse_param = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diffuse_param * lightColor;
+    vec3 diffuse = diffuse_param * lightColor * material.diffuse;
 
     // 镜面光照：当观察方向与反射方向接近时，可以看到高光
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -39,8 +42,8 @@ void main()
     // reflect函数要求第一个向量是从光源指向片段位置的向量
     vec3 reflectDir = reflect(-lightDir, norm);
     // 然后计算反射向量与观察方向的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
-    float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
-    vec3 specular = specularStrength * specular_param * lightColor;
+    float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
+    vec3 specular = specular_param * lightColor * material.specular;
 
     vec3 result = (ambient + diffuse + specular) * ourColor;
     FragColor = vec4(result, 1.0f);

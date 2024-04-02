@@ -211,7 +211,8 @@ int main()
 
 	Time::Init();
 
-	glm::vec3 cubeColor = glm::vec3(0.5f, 0.3f, 0.7f);
+	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
+	glm::vec3 cubeColor = glm::vec3(1.0f, 0.5f, 0.31f);
 	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPosition = glm::vec3(1.2f, 3.0f, 2.0f);
 
@@ -235,8 +236,7 @@ int main()
 
 		camera->Update();
 
-		lightPosition.x = std::cos(glfwGetTime()) * round;
-		lightPosition.z = std::sin(glfwGetTime()) * round;
+		lightPosition = cubePosition + glm::vec3(std::cos(glfwGetTime()) * round, 3, std::sin(glfwGetTime()) * round);
 
 #pragma region MVP
 		// mvp
@@ -249,7 +249,7 @@ int main()
 #pragma endregion
 
 #pragma region Shader
-		Utils::PrintVec3(camera->position);
+		//Utils::PrintVec3(camera->position);
 		shaderProgram->Use();
 
 		shaderProgram->SetUniformVec3("ourColor", cubeColor);
@@ -261,7 +261,7 @@ int main()
 		shaderProgram->SetUniformMat4f("projection", projection);
 
 		glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
-		model = glm::translate(model, glm::vec3(0, 0, -3));
+		model = glm::translate(model, cubePosition);
 		shaderProgram->SetUniformMat4f("model", model);
 
 		// 计算法线矩阵，用于把法向量转换为世界空间坐标
@@ -271,7 +271,11 @@ int main()
 		glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
 		shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 0.0f);
+		
+		shaderProgram->SetUniformVec3("material.ambient",  1.0f, 0.5f, 0.31f);
+		shaderProgram->SetUniformVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		shaderProgram->SetUniformVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		shaderProgram->SetUniformFloat("material.shininess", 32.0f);
 #pragma endregion
 
 		glBindVertexArray(VAO[0]);
