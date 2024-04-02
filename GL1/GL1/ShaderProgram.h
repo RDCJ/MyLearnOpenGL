@@ -77,6 +77,16 @@ class ShaderProgram
 			glUniformMatrix4fv(GetUniformLocation(name.c_str()), 1, (int)transpose, glm::value_ptr(mat));
 		}
 
+		void SetUniformVec3(const std::string& name, glm::vec3& vec) const
+		{
+			glUniform3f(GetUniformLocation(name.c_str()), vec.x, vec.y, vec.z);
+		}
+
+		void SetUniformVec3(const std::string& name, float x, float y, float z) const
+		{
+			glUniform3f(GetUniformLocation(name.c_str()), x, y, z);
+		}
+
 		int GetUniformLocation(const char* name) const
 		{
 			return glGetUniformLocation(ID, name);

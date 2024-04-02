@@ -14,30 +14,29 @@ Camera::Camera(GLFWwindow* _window, float _FOV, float _AspectRatio, float _zNear
 
 glm::mat4 Camera::GetView()
 {
-	//// LookAt矩阵: 创建一个看着(Look at)给定目标的观察矩阵
-	//// 第一个参数：摄像机位置
-	//// 第二个参数：目标位置
-	//// 第三个参数：上向量
-	//return glm::lookAt(
-	//	position, position + Front, this->Up
-	//);
+	// LookAt矩阵: 创建一个看着(Look at)给定目标的观察矩阵
+	// 第一个参数：摄像机位置
+	// 第二个参数：目标位置
+	// 第三个参数：上向量
+	return glm::lookAt(
+		position, position + Front, this->Up
+	);
 
-	glm::vec4 R = glm::vec4(Right, 0);
-	glm::vec4 U = glm::vec4(Up, 0);
-	glm::vec4 F = glm::vec4(-Front, 0); // 注意这里加负号
-	glm::vec4 C = glm::vec4(0, 0, 0, 1);
-	glm::mat4 A = glm::transpose(glm::mat4(R, U, F, C));
+	//glm::vec4 R = glm::vec4(Right, 0);
+	//glm::vec4 U = glm::vec4(Up, 0);
+	//glm::vec4 F = glm::vec4(-Front, 0); // 注意这里加负号
+	//glm::vec4 C = glm::vec4(0, 0, 0, 1);
+	//glm::mat4 A = glm::transpose(glm::mat4(R, U, F, C));
 
-	glm::mat4 B = glm::mat4(1);
-	B[3][0] = -position.x;
-	B[3][1] = -position.y;
-	B[3][2] = -position.z;
+	//glm::mat4 B = glm::mat4(1);
+	//B[3][0] = -position.x;
+	//B[3][1] = -position.y;
+	//B[3][2] = -position.z;
 
-	////auto result2 = glm::transpose(A * B);
-	auto result2 = A * B;
+	//////auto result2 = glm::transpose(A * B);
+	//auto result2 = A * B;
 
-	return result2;
-
+	//return result2;
 }
 
 glm::mat4 Camera::GetView(const glm::vec3 &target)
@@ -74,7 +73,10 @@ void Camera::Update()
 	else if (glfwGetKey(window, GLFW_KEY_A))
 		position += move_speed * Time::deltaTime * glm::normalize(glm::cross(Up, Front));
 
-	position.y = 0;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+		position += move_speed * Time::deltaTime * glm::vec3(0, 1, 0);
+	else if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
+		position -= move_speed * Time::deltaTime * glm::vec3(0, 1, 0);
 }
 
 void Camera::OnMouseMove(float x_offset, float y_offset)
