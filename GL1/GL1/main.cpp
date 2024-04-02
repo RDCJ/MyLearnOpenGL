@@ -65,7 +65,7 @@ void ProcessInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 }
 
-void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+void MouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (firstMouse)
 	{
@@ -77,6 +77,11 @@ void MouseCallback(GLFWwindow* window, double xpos, double ypos)
 	mouseLastPos.x = xpos;
 	mouseLastPos.y = ypos;
 	camera->OnMouseMove(xoffset, yoffset);
+}
+
+void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	camera->OnMouseScroll(yoffset);
 }
 
 int main() 
@@ -101,14 +106,17 @@ int main()
 	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
 	// 注册回调函数，鼠标一移动MouseCallback函数就会被调用
-	glfwSetCursorPosCallback(window, MouseCallback);
+	glfwSetCursorPosCallback(window, MouseMoveCallback);
+
+	// 注册回调函数，鼠标滚轮
+	glfwSetScrollCallback(window, MouseScrollCallback);
 
 	// glad初始化要在配置opengl context之后执行
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
 
-	camera = new Camera(window);
+	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -233,11 +241,7 @@ int main()
 	Time::Init();
 
 	float mix_param = 0;
-	float fov = 45.0f;
-	float aspect_ratio = (float)ScreenWidth / ScreenHeight;
-
-	glm::vec3 view_vec = glm::vec3(0, 0, -3.0f);
-
+	
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
 	while (!glfwWindowShouldClose(window))
@@ -286,13 +290,7 @@ int main()
 #pragma region MVP
 		// mvp
 		glm::mat4 view = camera->GetView();
-		glm::mat4 projection = glm::mat4(1.0f);
-		
-		//它的第一个参数定义了fov的值，它表示的是视野(Field of View)，并且设置了观察空间的大小。
-		// 如果想要一个真实的观察效果，它的值通常设置为45.0f，但想要一个末日风格的结果你可以将其设置一个更大的值。
-		// 第二个参数设置了宽高比: aspect-ratio，由视口的宽除以高所得。
-		// 第三和第四个参数设置了平截头体的近和远平面
-		projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
+		glm::mat4 projection = camera->GetProjection();
 #pragma endregion
 
 #pragma region 纹理

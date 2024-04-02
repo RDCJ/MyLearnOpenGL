@@ -28,6 +28,22 @@ class Camera
 		/// </summary>
 		glm::vec3 Up;
 		/// <summary>
+		/// 视野,定义了可以看到场景中多大的范围
+		/// </summary>
+		float FOV; 
+		/// <summary>
+		/// 宽高比
+		/// </summary>
+		float AspectRatio;
+		/// <summary>
+		/// 近平面
+		/// </summary>
+		float Z_Near;
+		/// <summary>
+		/// 远平面
+		/// </summary>
+		float Z_Far;
+		/// <summary>
 		/// 偏航角
 		/// </summary>
 		float yaw = -90;
@@ -40,10 +56,10 @@ class Camera
 		/// </summary>
 		float sensitivity = 0.05f;
 
-		Camera(GLFWwindow* _window);
+		Camera(GLFWwindow* _window, float _FOV = 45.0f, float _AspectRatio = 1.0f, float _zNear = 0.1f, float _zFar = 100.0f);
 
 		/// <summary>
-		/// 返回看着当前方向的观察矩阵
+		/// 返回看着当前方向的观察矩阵 (根据当前摄像机的位置，朝向计算)
 		/// </summary>
 		/// <returns></returns>
 		glm::mat4 GetView();
@@ -54,6 +70,11 @@ class Camera
 		/// <returns></returns>
 		glm::mat4 GetView(const glm::vec3& target);
 		/// <summary>
+		/// 返回投影矩阵 (使用FOV, AspectRatio, Z_Near, Z_Far计算)
+		/// </summary>
+		/// <returns></returns>
+		glm::mat4 GetProjection();
+		/// <summary>
 		/// 帧更新
 		/// </summary>
 		void Update();
@@ -61,6 +82,16 @@ class Camera
 		/// 处理鼠标移动事件
 		/// </summary>
 		void OnMouseMove(float x_offset, float y_offset);
+		/// <summary>
+		/// 处理鼠标滚轮事件
+		/// </summary>
+		/// <param name="y_offset"></param>
+		void OnMouseScroll(float y_offset);
+		/// <summary>
+		/// 用direction更新Front, 并更新Right和Up
+		/// </summary>
+		/// <param name="direction"></param>
+		void UpdateFront(glm::vec3& direction);
 
 	private:
 		
