@@ -73,9 +73,9 @@ void Camera::Update()
 	else if (glfwGetKey(window, GLFW_KEY_A))
 		position += move_speed * Time::deltaTime * glm::normalize(glm::cross(Up, Front));
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+	if (glfwGetKey(window, GLFW_KEY_SPACE))
 		position += move_speed * Time::deltaTime * glm::vec3(0, 1, 0);
-	else if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
+	else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
 		position -= move_speed * Time::deltaTime * glm::vec3(0, 1, 0);
 }
 

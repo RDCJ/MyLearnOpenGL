@@ -212,10 +212,10 @@ int main()
 	Time::Init();
 
 	glm::vec3 cubeColor = glm::vec3(0.5f, 0.3f, 0.7f);
-	glm::vec3 lightColor = glm::vec3(0.4f, 0.5f, 1.0f);
-	glm::vec3 lightPosition = glm::vec3(1.2f, 5.0f, 2.0f);
+	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 lightPosition = glm::vec3(1.2f, 3.0f, 2.0f);
 
-	float round = 5;
+	float round = 3;
 	
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -249,12 +249,13 @@ int main()
 #pragma endregion
 
 #pragma region Shader
-
+		Utils::PrintVec3(camera->position);
 		shaderProgram->Use();
 
 		shaderProgram->SetUniformVec3("ourColor", cubeColor);
 		shaderProgram->SetUniformVec3("lightColor", lightColor);
 		shaderProgram->SetUniformVec3("lightPosition", lightPosition);
+		shaderProgram->SetUniformVec3("viewPos", camera->position);
 
 		shaderProgram->SetUniformMat4f("view", view);
 		shaderProgram->SetUniformMat4f("projection", projection);
