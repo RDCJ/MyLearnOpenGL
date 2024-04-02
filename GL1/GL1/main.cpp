@@ -212,7 +212,7 @@ int main()
 	Time::Init();
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
-	glm::vec3 cubeColor = glm::vec3(1.0f, 0.5f, 0.31f);
+	glm::vec3 cubeColor = glm::vec3(0.75164f, 0.60648f, 0.22648f);
 	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPosition = glm::vec3(1.2f, 3.0f, 2.0f);
 
@@ -272,10 +272,15 @@ int main()
 		shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		
-		shaderProgram->SetUniformVec3("material.ambient",  1.0f, 0.5f, 0.31f);
-		shaderProgram->SetUniformVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-		shaderProgram->SetUniformVec3("material.specular", 0.5f, 0.5f, 0.5f);
-		shaderProgram->SetUniformFloat("material.shininess", 32.0f);
+		shaderProgram->SetUniformVec3("material.ambient", 0.24725f, 0.1995f, 0.0745f);
+		shaderProgram->SetUniformVec3("material.diffuse", 0.75164f, 0.60648f, 0.22648f);
+		shaderProgram->SetUniformVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
+		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
+
+		shaderProgram->SetUniformVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+		shaderProgram->SetUniformVec3("light.diffuse", lightColor);
+		shaderProgram->SetUniformVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram->SetUniformVec3("light.position", lightPosition);
 #pragma endregion
 
 		glBindVertexArray(VAO[0]);
