@@ -2,10 +2,7 @@
 
 struct Material
 {
-    // 环境光反射率
-    vec3 ambient;
-    // 漫反射率
-    vec3 diffuse;
+    sampler2D diffuse;
     // 镜面反射率
     vec3 specular;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
@@ -22,6 +19,7 @@ struct Light
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec2 TexCoord;
 
 out vec4 FragColor;
 
@@ -33,7 +31,7 @@ uniform Light light;
 void main()
 {   
     // 环境光照
-    vec3 ambient = light.ambient * material.ambient;
+    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoord));
 
     // 漫反射光照：使物体上法线方向与光线方向越接近的片段能从光源处获得更多的亮度
     // 标准化
@@ -44,7 +42,7 @@ void main()
     // 如果两个向量之间的角度大于90度，点乘的结果就会变成负数，这样会导致漫反射分量变为负数
     // 一般来说，物体表面只反射照在正面的光线，因此排除负数的情况
     float diffuse_param = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diffuse_param * light.diffuse * material.diffuse;
+    vec3 diffuse = diffuse_param * light.diffuse * vec3(texture(material.diffuse, TexCoord));
 
     // 镜面光照：当观察方向与反射方向接近时，可以看到高光
     vec3 viewDir = normalize(viewPos - FragPos);
