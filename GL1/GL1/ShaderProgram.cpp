@@ -3,8 +3,8 @@
 ShaderProgram::ShaderProgram(const char* vert_source_path, const char* frag_source_path)
 {
 	ID = glCreateProgram();
-	Shader vertex_shader = Shader(vert_source_path, ShaderType::Vertex);
-	Shader frag_shader = Shader(frag_source_path, ShaderType::Fragment);
+	Shader vertex_shader = Shader(vert_source_path, ShaderType::VertexShader);
+	Shader frag_shader = Shader(frag_source_path, ShaderType::FragmentShader);
 
 	bool f1 = vertex_shader.CheckCompileSuccess();
 	bool f2 = frag_shader.CheckCompileSuccess();
