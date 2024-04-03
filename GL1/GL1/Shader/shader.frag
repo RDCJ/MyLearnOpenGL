@@ -17,9 +17,15 @@ struct Light
     int type;
     vec3 position;
     vec3 direction;
+    float cutOff;
+
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
 };
 
 in vec3 FragPos;
@@ -36,17 +42,30 @@ void main()
 {   
     // 标准化
     vec3 norm = normalize(Normal);
+
     // 计算光照方向: 计算需求一个从片段至光源的光线方向
     vec3 lightDir = vec3(0);
     if (light.type == 0)
     {
         lightDir = -light.direction;
     }
-    else if (light.type == 1)
+    else
     {
         lightDir = light.position - FragPos;
     }
     lightDir = normalize(lightDir);
+
+    // 聚光光源计算光照方向
+    float spot_param = 1;
+    float theta = dot(-lightDir, normalize(light.direction));
+    if (light.type == 2 && theta < light.cutOff)
+    {
+        spot_param = 0;
+    }
+
+    // 计算光照衰减
+    float distance = length(light.position - FragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
 
     // 环境光照
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoord));
@@ -69,6 +88,6 @@ void main()
 
     //vec3 emission = vec3(texture(material.emission, TexCoord));
     
-    vec3 result = ambient + diffuse + specular;// + emission;
+    vec3 result = attenuation * (ambient + spot_param * (diffuse + specular));// + emission;
     FragColor = vec4(result, 1.0f);
 } 

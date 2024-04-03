@@ -1,6 +1,7 @@
 #pragma once
 #ifndef LIGHT_H
 #include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
 
 enum LightType
 {
@@ -15,15 +16,18 @@ class Light
 		LightType type = Directional;
 		glm::vec3 position = glm::vec3(0);
 		glm::vec3 direction = glm::vec3(0);
+		float cutOff = 0;
 		
 		glm::vec3 ambient = glm::vec3(0);
 		glm::vec3 diffuse = glm::vec3(0);
 		glm::vec3 specular = glm::vec3(0);
 
-		Light(LightType type = Directional, glm::vec3 position = glm::vec3(0), glm::vec3 direction = glm::vec3(0), 
-				glm::vec3 ambient = glm::vec3(0), glm::vec3 diffuse = glm::vec3(0), glm::vec3 specular = glm::vec3(0))
-			: type(type), position(position), direction(direction), ambient(ambient), diffuse(diffuse), specular(specular)
-		{}
+		float constant = 1.0;
+		float linear = 0;
+		float quadratic = 0;
+
+		void Update();
+
 	private:
 
 };

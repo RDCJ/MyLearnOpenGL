@@ -243,14 +243,19 @@ int main()
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 
 	Light light = Light();
-	light.type = LightType::Directional;
+	light.type = LightType::Spot;
 
+	light.position = glm::vec3(0, 2, 0);
 	light.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+	light.cutOff = 12.5f;
+
 	light.ambient = glm::vec3(0.2f);
 	light.diffuse = glm::vec3(1);
 	light.specular = glm::vec3(1);
 
-	float round = 2;
+	light.linear = 0.09f;
+	light.quadratic = 0.032f;
+
 	
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -270,10 +275,9 @@ int main()
 
 		camera->Update();
 
-		if (light.type == Directional)
-			light.position = 2.0f * glm::normalize(-light.direction);
-		else
-			light.position = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1.5f, std::sin(glfwGetTime() * 2) * round);
+		//light.Update();
+		light.position = camera->position;
+		light.direction = camera->Front;
 
 #pragma region MVP
 		// mvp
@@ -315,9 +319,15 @@ int main()
 		shaderProgram->SetUniformInt("light.type", (int)light.type);
 		shaderProgram->SetUniformVec3("light.position", light.position);
 		shaderProgram->SetUniformVec3("light.direction", light.direction);
+		shaderProgram->SetUniformFloat("light.cutOff", glm::cos(glm::radians(light.cutOff)));
+
 		shaderProgram->SetUniformVec3("light.ambient", light.ambient);
 		shaderProgram->SetUniformVec3("light.diffuse", light.diffuse);
 		shaderProgram->SetUniformVec3("light.specular", light.specular);
+
+		shaderProgram->SetUniformFloat("light.constant", light.type == LightType::Point ? light.constant : 1);
+		shaderProgram->SetUniformFloat("light.linear", light.type == LightType::Point ? light.linear : 0);
+		shaderProgram->SetUniformFloat("light.quadratic", light.type == LightType::Point ? light.quadratic : 0);
 		
 #pragma endregion
 
@@ -343,21 +353,19 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 		
+		//light_shaderProgram->Use();
+		//light_shaderProgram->SetUniformVec3("lightColor", light.diffuse);
 
-		
-		light_shaderProgram->Use();
-		light_shaderProgram->SetUniformVec3("lightColor", light.diffuse);
+		//auto lightModel = glm::mat4(1.0f);
+		//lightModel = glm::translate(lightModel, light.position);
+		//lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+		//light_shaderProgram->SetUniformMat4f("model", lightModel);
+		//light_shaderProgram->SetUniformMat4f("view", view);
+		//light_shaderProgram->SetUniformMat4f("projection", projection);
 
-		auto lightModel = glm::mat4(1.0f);
-		lightModel = glm::translate(lightModel, light.position);
-		lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-		light_shaderProgram->SetUniformMat4f("model", lightModel);
-		light_shaderProgram->SetUniformMat4f("view", view);
-		light_shaderProgram->SetUniformMat4f("projection", projection);
+		//glBindVertexArray(VAO[1]);
 
-		glBindVertexArray(VAO[1]);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
