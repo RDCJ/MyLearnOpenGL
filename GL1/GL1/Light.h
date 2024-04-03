@@ -4,9 +4,9 @@
 
 enum LightType
 {
-	Directional,
-	Point,
-	Spot
+	Directional = 0,
+	Point = 1,
+	Spot = 2
 };
 
 class Light

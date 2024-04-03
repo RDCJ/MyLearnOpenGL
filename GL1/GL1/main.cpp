@@ -165,6 +165,19 @@ int main()
 		   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
+	glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
 #pragma region MyRegion
 	// EBO是一个缓冲区，就像一个顶点缓冲区对象一样，它存储 OpenGL 用来决定要绘制哪些顶点的索引
 	unsigned int VBO[2], VAO[2];
@@ -228,14 +241,14 @@ int main()
 	Time::Init();
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
-	glm::vec3 cubeColor = glm::vec3(1, 1, 1);
 
 	Light light = Light();
-	light.type = LightType::Point;
+	light.type = LightType::Directional;
 
-	light.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
-	light.diffuse = glm::vec3(1.0f);
-	light.specular = glm::vec3(1.0f);
+	light.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+	light.ambient = glm::vec3(0.2f);
+	light.diffuse = glm::vec3(1);
+	light.specular = glm::vec3(1);
 
 	float round = 2;
 	
@@ -257,7 +270,10 @@ int main()
 
 		camera->Update();
 
-		light.position = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1.5f, std::sin(glfwGetTime() * 2) * round);
+		if (light.type == Directional)
+			light.position = 2.0f * glm::normalize(-light.direction);
+		else
+			light.position = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1.5f, std::sin(glfwGetTime() * 2) * round);
 
 #pragma region MVP
 		// mvp
@@ -285,36 +301,48 @@ int main()
 		shaderProgram->SetUniformMat4f("view", view);
 		shaderProgram->SetUniformMat4f("projection", projection);
 
-		glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
-		model = glm::translate(model, cubePosition);
-		shaderProgram->SetUniformMat4f("model", model);
-
-		// 计算法线矩阵，用于把法向量转换为世界空间坐标
-		// 法线应该只受缩放和旋转变换的影响，而不受位移
-		// 不等比缩放会导致法向量不再垂直于对应的表面
-		// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
-		glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
+		
 		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		
 		//shaderProgram->SetUniformVec3("material.ambient", 0.24725f, 0.1995f, 0.0745f);
 		//shaderProgram->SetUniformVec3("material.diffuse", 0.75164f, 0.60648f, 0.22648f);
-		shaderProgram->SetUniformVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
+		//shaderProgram->SetUniformVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
 		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
 		shaderProgram->SetUniformInt("material.diffuse", 0);
 		shaderProgram->SetUniformInt("material.specular", 1);
-		shaderProgram->SetUniformInt("material.emission", 2);
+		//shaderProgram->SetUniformInt("material.emission", 2);
 
+		shaderProgram->SetUniformInt("light.type", (int)light.type);
+		shaderProgram->SetUniformVec3("light.position", light.position);
+		shaderProgram->SetUniformVec3("light.direction", light.direction);
 		shaderProgram->SetUniformVec3("light.ambient", light.ambient);
 		shaderProgram->SetUniformVec3("light.diffuse", light.diffuse);
 		shaderProgram->SetUniformVec3("light.specular", light.specular);
-		shaderProgram->SetUniformVec3("light.position", light.position);
+		
 #pragma endregion
 
 		glBindVertexArray(VAO[0]);
 
-		////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
+			model = glm::translate(model, cubePositions[i]);
+
+			float angle = 29 * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			shaderProgram->SetUniformMat4f("model", model);
+
+			// 计算法线矩阵，用于把法向量转换为世界空间坐标
+			// 法线应该只受缩放和旋转变换的影响，而不受位移
+			// 不等比缩放会导致法向量不再垂直于对应的表面
+			// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
+			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
+			shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
+
+			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		
 
 		
 		light_shaderProgram->Use();

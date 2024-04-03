@@ -14,7 +14,9 @@ struct Material
 
 struct Light
 {
+    int type;
     vec3 position;
+    vec3 direction;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -32,14 +34,24 @@ uniform Light light;
 
 void main()
 {   
+    // 标准化
+    vec3 norm = normalize(Normal);
+    // 计算光照方向: 计算需求一个从片段至光源的光线方向
+    vec3 lightDir = vec3(0);
+    if (light.type == 0)
+    {
+        lightDir = -light.direction;
+    }
+    else if (light.type == 1)
+    {
+        lightDir = light.position - FragPos;
+    }
+    lightDir = normalize(lightDir);
+
     // 环境光照
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoord));
 
     // 漫反射光照：使物体上法线方向与光线方向越接近的片段能从光源处获得更多的亮度
-    // 标准化
-    vec3 norm = normalize(Normal);
-    // 计算光照方向
-    vec3 lightDir = normalize(light.position - FragPos);
     // 用点乘表示法线方向与光线方向的接近程度：两个单位向量的夹角越小，它们点乘的结果越倾向于1
     // 如果两个向量之间的角度大于90度，点乘的结果就会变成负数，这样会导致漫反射分量变为负数
     // 一般来说，物体表面只反射照在正面的光线，因此排除负数的情况
@@ -55,8 +67,8 @@ void main()
     float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
     vec3 specular = specular_param * light.specular * vec3(texture(material.specular, TexCoord));
 
-    vec3 emission = vec3(texture(material.emission, TexCoord));
-
-    vec3 result = ambient + diffuse + specular + emission;
+    //vec3 emission = vec3(texture(material.emission, TexCoord));
+    
+    vec3 result = ambient + diffuse + specular;// + emission;
     FragColor = vec4(result, 1.0f);
 } 
