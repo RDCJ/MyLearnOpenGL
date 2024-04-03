@@ -216,6 +216,10 @@ int main()
 	specular_map.SetParameters();
 	specular_map.GenerateMipmap();
 
+	Texture2D emission_map = Texture2D("Image/matrix.jpg");
+	emission_map.SetParameters();
+	emission_map.GenerateMipmap();
+
 	// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
 	// 启用深度测试，需要开启GL_DEPTH_TEST
 	glEnable(GL_DEPTH_TEST);
@@ -261,13 +265,15 @@ int main()
 
 		glActiveTexture(GL_TEXTURE1);
 		specular_map.Bind();
+
+		glActiveTexture(GL_TEXTURE2);
+		emission_map.Bind();
 #pragma endregion
 
 #pragma region Shader
 		//Utils::PrintVec3(camera->position);
 		shaderProgram->Use();
 
-		shaderProgram->SetUniformVec3("ourColor", cubeColor);
 		shaderProgram->SetUniformVec3("lightColor", lightColor);
 		shaderProgram->SetUniformVec3("lightPosition", lightPosition);
 		shaderProgram->SetUniformVec3("viewPos", camera->position);
@@ -293,6 +299,7 @@ int main()
 		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
 		shaderProgram->SetUniformInt("material.diffuse", 0);
 		shaderProgram->SetUniformInt("material.specular", 1);
+		shaderProgram->SetUniformInt("material.emission", 2);
 
 		shaderProgram->SetUniformVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		shaderProgram->SetUniformVec3("light.diffuse", lightColor);

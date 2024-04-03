@@ -6,6 +6,8 @@ struct Material
     sampler2D diffuse;
     // 镜面反射贴图
     sampler2D specular;
+    // 放射光贴图
+    sampler2D emission;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
 };
@@ -25,7 +27,6 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform vec3 viewPos;
-uniform vec3 ourColor;
 uniform Material material;
 uniform Light light;
 
@@ -54,6 +55,8 @@ void main()
     float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
     vec3 specular = specular_param * light.specular * vec3(texture(material.specular, TexCoord));
 
-    vec3 result = (ambient + diffuse + specular) * ourColor;
+    vec3 emission = vec3(texture(material.emission, TexCoord));
+
+    vec3 result = ambient + diffuse + specular + emission;
     FragColor = vec4(result, 1.0f);
 } 
