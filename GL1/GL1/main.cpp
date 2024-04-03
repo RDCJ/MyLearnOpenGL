@@ -166,6 +166,24 @@ int main()
 		   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
+	std::vector<Vertex> _vertices;
+	for (int i = 0; i < 36; i++)
+	{
+		Vertex v{
+			glm::vec3(vertices[i * 8], vertices[i * 8 + 1], vertices[i * 8 + 2]),
+			glm::vec3(vertices[i * 8 +3], vertices[i * 8 + 4], vertices[i * 8 + 5]),
+			glm::vec2(vertices[i * 8 + 6], vertices[i * 8 + 7])
+		};
+		_vertices.push_back(v);
+	}
+	std::vector<unsigned int> _indices;
+	for (int i = 0; i < 36; i++)
+	{
+		_indices.push_back(i);
+	}
+	std::vector<Texture2D> _textures;
+	Mesh mesh(_vertices, _indices, _textures);
+
 	glm::vec3 cubePositions[] = {
 	glm::vec3(0.0f,  0.0f,  0.0f),
 	glm::vec3(2.0f,  5.0f, -15.0f),
