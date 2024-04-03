@@ -16,8 +16,10 @@ class Light
 		LightType type = Directional;
 		glm::vec3 position = glm::vec3(0);
 		glm::vec3 direction = glm::vec3(0);
-		float cutOff = 0;
-		
+
+		float innerCutOff = 0;
+		float outerCutOff = 0;
+
 		glm::vec3 ambient = glm::vec3(0);
 		glm::vec3 diffuse = glm::vec3(0);
 		glm::vec3 specular = glm::vec3(0);

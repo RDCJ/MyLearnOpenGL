@@ -247,7 +247,8 @@ int main()
 
 	light.position = glm::vec3(0, 2, 0);
 	light.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-	light.cutOff = 12.5f;
+	light.innerCutOff = 12.5f;
+	light.outerCutOff = 20.0f;
 
 	light.ambient = glm::vec3(0.2f);
 	light.diffuse = glm::vec3(1);
@@ -319,7 +320,8 @@ int main()
 		shaderProgram->SetUniformInt("light.type", (int)light.type);
 		shaderProgram->SetUniformVec3("light.position", light.position);
 		shaderProgram->SetUniformVec3("light.direction", light.direction);
-		shaderProgram->SetUniformFloat("light.cutOff", glm::cos(glm::radians(light.cutOff)));
+		shaderProgram->SetUniformFloat("light.innerCutOff", glm::cos(glm::radians(light.innerCutOff)));
+		shaderProgram->SetUniformFloat("light.outerCutOff", glm::cos(glm::radians(light.outerCutOff)));
 
 		shaderProgram->SetUniformVec3("light.ambient", light.ambient);
 		shaderProgram->SetUniformVec3("light.diffuse", light.diffuse);
