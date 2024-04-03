@@ -1,6 +1,13 @@
 #include "Texture2D.h"
 
-Texture2D::Texture2D(const char* image_path)
+const std::vector<std::string> Texture2D::TextureTypes
+{
+	"texture_diffuse",
+	"texture_specular",
+	"texture_emission"
+};
+
+Texture2D::Texture2D(const char* image_path, std::string _type): type(_type)
 {
 	stbi_set_flip_vertically_on_load(true);
 	int width, height, nrChannels;

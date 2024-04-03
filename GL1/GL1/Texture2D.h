@@ -3,11 +3,14 @@
 
 #include <glad/glad.h>
 #include "stb_image.h"
+#include <string>
+#include <vector>
+
 class Texture2D
 {
 	public:
 		unsigned int GetID() { return ID; }
-		Texture2D(const char* image_path);
+		Texture2D(const char* image_path, std::string _type);
 		void SetParameters();
 		void GenerateMipmap();
 		/// <summary>
@@ -15,8 +18,13 @@ class Texture2D
 		/// </summary>
 		void Bind();
 
+		std::string type;
+		static const std::vector<std::string> TextureTypes;
+
+
 	private:
 		unsigned int ID;
+		
 };
 
 #endif // ! TEXTURE2D_H
