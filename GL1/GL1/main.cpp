@@ -17,6 +17,7 @@
 #include "Model.h"
 #include "Camera.h"
 #include "Time.h"
+#include "Light.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -228,8 +229,13 @@ int main()
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 	glm::vec3 cubeColor = glm::vec3(1, 1, 1);
-	glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	glm::vec3 lightPosition;
+
+	Light light = Light();
+	light.type = LightType::Point;
+
+	light.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+	light.diffuse = glm::vec3(1.0f);
+	light.specular = glm::vec3(1.0f);
 
 	float round = 2;
 	
@@ -251,7 +257,7 @@ int main()
 
 		camera->Update();
 
-		lightPosition = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1.5f, std::sin(glfwGetTime() * 2) * round);
+		light.position = cubePosition + glm::vec3(std::cos(glfwGetTime() * 2) * round, 1.5f, std::sin(glfwGetTime() * 2) * round);
 
 #pragma region MVP
 		// mvp
@@ -274,8 +280,6 @@ int main()
 		//Utils::PrintVec3(camera->position);
 		shaderProgram->Use();
 
-		shaderProgram->SetUniformVec3("lightColor", lightColor);
-		shaderProgram->SetUniformVec3("lightPosition", lightPosition);
 		shaderProgram->SetUniformVec3("viewPos", camera->position);
 
 		shaderProgram->SetUniformMat4f("view", view);
@@ -301,10 +305,10 @@ int main()
 		shaderProgram->SetUniformInt("material.specular", 1);
 		shaderProgram->SetUniformInt("material.emission", 2);
 
-		shaderProgram->SetUniformVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-		shaderProgram->SetUniformVec3("light.diffuse", lightColor);
-		shaderProgram->SetUniformVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram->SetUniformVec3("light.position", lightPosition);
+		shaderProgram->SetUniformVec3("light.ambient", light.ambient);
+		shaderProgram->SetUniformVec3("light.diffuse", light.diffuse);
+		shaderProgram->SetUniformVec3("light.specular", light.specular);
+		shaderProgram->SetUniformVec3("light.position", light.position);
 #pragma endregion
 
 		glBindVertexArray(VAO[0]);
@@ -314,10 +318,10 @@ int main()
 
 		
 		light_shaderProgram->Use();
-		light_shaderProgram->SetUniformVec3("lightColor", lightColor);
+		light_shaderProgram->SetUniformVec3("lightColor", light.diffuse);
 
 		auto lightModel = glm::mat4(1.0f);
-		lightModel = glm::translate(lightModel, lightPosition);
+		lightModel = glm::translate(lightModel, light.position);
 		lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 		light_shaderProgram->SetUniformMat4f("model", lightModel);
 		light_shaderProgram->SetUniformMat4f("view", view);

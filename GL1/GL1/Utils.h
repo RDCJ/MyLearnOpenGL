@@ -12,7 +12,15 @@ class Utils
 public:
 	static void PrintVec3(glm::vec3& vec);
 	static void PrintMat4(glm::mat4& mat);
+
+	static const glm::vec3 Up;
+	static const glm::vec3 Down;
+	static const glm::vec3 Left;
+	static const glm::vec3 Right;
+	static const glm::vec3 Forward;
+	static const glm::vec3 Back;
 };
+
 
 #endif // !UTILS_H
 
