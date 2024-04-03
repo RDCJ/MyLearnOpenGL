@@ -242,22 +242,38 @@ int main()
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 
-	Light light = Light();
-	light.type = LightType::Spot;
+#pragma region 配置光源
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+	//light.linear = 0.09f;
+	//light.quadratic = 0.032f;
+	std::vector<Light*> lights = std::vector<Light*>();
+	for (int i = 0; i < 4; i++)
+	{
+		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
+		lights.push_back(light);
+	}
 
-	light.position = glm::vec3(0, 2, 0);
-	light.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-	light.innerCutOff = 12.5f;
-	light.outerCutOff = 20.0f;
+	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
+	Light* directional_light = Light::CreateDirectional(glm::vec3(0, 2, 0), glm::vec3(-1, -1, -1));
 
-	light.ambient = glm::vec3(0.2f);
-	light.diffuse = glm::vec3(1);
-	light.specular = glm::vec3(1);
+	lights.push_back(directional_light);
+	lights.push_back(spot_light);
 
-	light.linear = 0.09f;
-	light.quadratic = 0.032f;
+	for (Light* light : lights)
+	{
+		light->ambient = glm::vec3(0.2f);
+		light->diffuse = glm::vec3(1);
+		light->specular = glm::vec3(1);
+	}
 
-	
+	directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
+#pragma endregion
+
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -277,8 +293,8 @@ int main()
 		camera->Update();
 
 		//light.Update();
-		light.position = camera->position;
-		light.direction = camera->Front;
+		spot_light->position = camera->position;
+		spot_light->direction = camera->Front;
 
 #pragma region MVP
 		// mvp
@@ -317,20 +333,25 @@ int main()
 		shaderProgram->SetUniformInt("material.specular", 1);
 		//shaderProgram->SetUniformInt("material.emission", 2);
 
-		shaderProgram->SetUniformInt("light.type", (int)light.type);
-		shaderProgram->SetUniformVec3("light.position", light.position);
-		shaderProgram->SetUniformVec3("light.direction", light.direction);
-		shaderProgram->SetUniformFloat("light.innerCutOff", glm::cos(glm::radians(light.innerCutOff)));
-		shaderProgram->SetUniformFloat("light.outerCutOff", glm::cos(glm::radians(light.outerCutOff)));
+		for (int i = 0; i < lights.size(); i++)
+		{
+			Light* light = lights[i];
 
-		shaderProgram->SetUniformVec3("light.ambient", light.ambient);
-		shaderProgram->SetUniformVec3("light.diffuse", light.diffuse);
-		shaderProgram->SetUniformVec3("light.specular", light.specular);
+			std::string index = "lights[" + std::to_string(i) + "]";
+			shaderProgram->SetUniformInt(index + ".type", (int)light->type);
+			shaderProgram->SetUniformVec3(index + ".position", light->position);
+			shaderProgram->SetUniformVec3(index + ".direction", light->direction);
+			shaderProgram->SetUniformFloat(index + ".innerCutOff", glm::cos(glm::radians(light->innerCutOff)));
+			shaderProgram->SetUniformFloat(index + ".outerCutOff", glm::cos(glm::radians(light->outerCutOff)));
 
-		shaderProgram->SetUniformFloat("light.constant", light.type == LightType::Point ? light.constant : 1);
-		shaderProgram->SetUniformFloat("light.linear", light.type == LightType::Point ? light.linear : 0);
-		shaderProgram->SetUniformFloat("light.quadratic", light.type == LightType::Point ? light.quadratic : 0);
-		
+			shaderProgram->SetUniformVec3(index + ".ambient", light->ambient);
+			shaderProgram->SetUniformVec3(index + ".diffuse", light->diffuse);
+			shaderProgram->SetUniformVec3(index + ".specular", light->specular);
+
+			shaderProgram->SetUniformFloat(index + ".constant", light->type == LightType::Point ? light->constant : 1);
+			shaderProgram->SetUniformFloat(index + ".linear", light->type == LightType::Point ? light->linear : 0);
+			shaderProgram->SetUniformFloat(index + ".quadratic", light->type == LightType::Point ? light->quadratic : 0);
+		}
 #pragma endregion
 
 		glBindVertexArray(VAO[0]);
@@ -354,20 +375,25 @@ int main()
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		
-		//light_shaderProgram->Use();
-		//light_shaderProgram->SetUniformVec3("lightColor", light.diffuse);
 
-		//auto lightModel = glm::mat4(1.0f);
-		//lightModel = glm::translate(lightModel, light.position);
-		//lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-		//light_shaderProgram->SetUniformMat4f("model", lightModel);
-		//light_shaderProgram->SetUniformMat4f("view", view);
-		//light_shaderProgram->SetUniformMat4f("projection", projection);
+		for (int i = 0; i < lights.size() - 1; i++)
+		{
+			Light* light = lights[i];
 
-		//glBindVertexArray(VAO[1]);
+			light_shaderProgram->Use();
+			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
 
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+			auto lightModel = glm::mat4(1.0f);
+			lightModel = glm::translate(lightModel, light->position);
+			lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+			light_shaderProgram->SetUniformMat4f("model", lightModel);
+			light_shaderProgram->SetUniformMat4f("view", view);
+			light_shaderProgram->SetUniformMat4f("projection", projection);
+
+			glBindVertexArray(VAO[1]);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);

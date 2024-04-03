@@ -30,6 +30,10 @@ class Light
 
 		void Update();
 
+		static Light* CreateDirectional(glm::vec3 _position, glm::vec3 _direction);
+		static Light* CreatePoint(glm::vec3 _position, float _constant = 1, float _linear = 0, float _quadratic=0);
+		static Light* CreateSpot(glm::vec3 _position, glm::vec3 _direction, float _innerCutOff, float _outerCutOff);
+
 	private:
 
 };
