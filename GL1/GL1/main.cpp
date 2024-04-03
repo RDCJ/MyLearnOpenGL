@@ -18,8 +18,8 @@
 #include "Camera.h"
 #include "Time.h"
 
-const int ScreenWidth = 800;
-const int ScreenHeight = 600;
+const int ScreenWidth = 1600;
+const int ScreenHeight = 1200;
 
 Camera* camera = nullptr;
 bool firstMouse = true;
@@ -212,6 +212,10 @@ int main()
 	diffuse_map.SetParameters();
 	diffuse_map.GenerateMipmap();
 
+	Texture2D specular_map = Texture2D("Image/container2_specular.png");
+	specular_map.SetParameters();
+	specular_map.GenerateMipmap();
+
 	// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
 	// 启用深度测试，需要开启GL_DEPTH_TEST
 	glEnable(GL_DEPTH_TEST);
@@ -254,6 +258,9 @@ int main()
 #pragma region 纹理
 		glActiveTexture(GL_TEXTURE0);
 		diffuse_map.Bind();
+
+		glActiveTexture(GL_TEXTURE1);
+		specular_map.Bind();
 #pragma endregion
 
 #pragma region Shader
@@ -285,7 +292,7 @@ int main()
 		shaderProgram->SetUniformVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
 		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
 		shaderProgram->SetUniformInt("material.diffuse", 0);
-		
+		shaderProgram->SetUniformInt("material.specular", 1);
 
 		shaderProgram->SetUniformVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		shaderProgram->SetUniformVec3("light.diffuse", lightColor);

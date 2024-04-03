@@ -2,9 +2,10 @@
 
 struct Material
 {
+    // 漫反射贴图
     sampler2D diffuse;
-    // 镜面反射率
-    vec3 specular;
+    // 镜面反射贴图
+    sampler2D specular;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
 };
@@ -51,7 +52,7 @@ void main()
     vec3 reflectDir = reflect(-lightDir, norm);
     // 然后计算反射向量与观察方向的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
     float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
-    vec3 specular = specular_param * light.specular * material.specular;
+    vec3 specular = specular_param * light.specular * vec3(texture(material.specular, TexCoord));
 
     vec3 result = (ambient + diffuse + specular) * ourColor;
     FragColor = vec4(result, 1.0f);
