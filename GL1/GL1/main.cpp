@@ -88,6 +88,39 @@ void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 	camera->OnMouseScroll(yoffset);
 }
 
+static std::vector<Light*> CreateLight()
+{
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+
+	std::vector<Light*> lights = std::vector<Light*>();
+	for (int i = 0; i < 4; i++)
+	{
+		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
+		lights.push_back(light);
+	}
+
+	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
+	Light* directional_light = Light::CreateDirectional(glm::vec3(0, 2, 0), glm::vec3(-1, -1, -1));
+
+	lights.push_back(directional_light);
+	//lights.push_back(spot_light);
+
+	for (Light* light : lights)
+	{
+		light->ambient = glm::vec3(0.2f);
+		light->diffuse = glm::vec3(1);
+		light->specular = glm::vec3(1);
+	}
+
+	return lights;
+	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
+}
+
 int main() 
 {
 	InitGLFW();
@@ -119,7 +152,7 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* light_shaderProgram = new ShaderProgram("./Shader/LightVert.vert", "./Shader/LightFrag.frag");
-	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/shader.frag");
+	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/z_buffer_shader.frag");
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
@@ -226,34 +259,7 @@ int main()
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 
 #pragma region 配置光源
-	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
-		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f,  2.0f, -12.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
-	};
-
-	std::vector<Light*> lights = std::vector<Light*>();
-	for (int i = 0; i < 4; i++)
-	{
-		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
-		lights.push_back(light);
-	}
-
-	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
-	Light* directional_light = Light::CreateDirectional(glm::vec3(0, 2, 0), glm::vec3(-1, -1, -1));
-
-	lights.push_back(directional_light);
-	lights.push_back(spot_light);
-
-	for (Light* light : lights)
-	{
-		light->ambient = glm::vec3(0.2f);
-		light->diffuse = glm::vec3(1);
-		light->specular = glm::vec3(1);
-	}
-
-	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
+	auto lights = CreateLight();
 #pragma endregion
 
 	std::cout << "开始渲染" << std::endl;
@@ -275,8 +281,8 @@ int main()
 		camera->Update();
 
 		//light.Update();
-		spot_light->position = camera->position;
-		spot_light->direction = camera->Front;
+		//spot_light->position = camera->position;
+		//spot_light->direction = camera->Front;
 
 #pragma region MVP
 		// mvp
@@ -295,6 +301,7 @@ int main()
 		shaderProgram->SetUniformMat4f("projection", projection);
 		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
 
+		shaderProgram->SetUniformInt("light_num", lights.size());
 		for (int i = 0; i < lights.size(); i++)
 		{
 			Light* light = lights[i];
@@ -339,7 +346,7 @@ int main()
 
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0, 0, 1));
-		model = glm::scale(model, glm::vec3(0.2f));
+		model = glm::scale(model, glm::vec3(0.1f));
 		shaderProgram->SetUniformMat4f("model", model);
 		nanosuit.Draw(*shaderProgram);
 
