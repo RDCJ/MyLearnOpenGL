@@ -42,11 +42,12 @@ in vec2 TexCoord;
 
 out vec4 FragColor;
 
+uniform int light_num;
 uniform vec3 viewPos;
 uniform Material material;
 
-#define LIGHT_NUM 6
-uniform Light lights[LIGHT_NUM];
+#define LIGHT_MAX_NUM 6
+uniform Light lights[LIGHT_MAX_NUM];
 
 
 vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
@@ -111,7 +112,7 @@ void main()
 
     vec3 result = vec3(0);
 
-    for (int i=0; i<LIGHT_NUM; i++)
+    for (int i=0; i<light_num; i++)
         result += CalcLight(lights[i], norm, viewDir);
     
     FragColor = vec4(result, 1.0f);
