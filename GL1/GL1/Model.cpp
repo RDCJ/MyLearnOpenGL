@@ -65,6 +65,7 @@ Mesh Model::ProcessMesh(aiMesh * mesh, const aiScene * scene)
 		{
 			v.TexCoords = glm::vec2(0);
 		}
+		vertices.push_back(v);
 	}
 
 	// ÌáÈ¡Ë÷Òý
