@@ -3,13 +3,14 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <vector>
+
 
 #include "ShaderProgram.h"
 #include "stb_image.h"
@@ -19,6 +20,7 @@
 #include "Time.h"
 #include "Light.h"
 #include "Mesh.h"
+#include "Model.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -121,6 +123,9 @@ int main()
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
+	Model nanosuit("./Model/nanosuit/nanosuit.obj");
+
+#pragma region cube model
 	float vertices[] = {
 		// positions          // normals           // texture coords
 		   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
@@ -171,7 +176,7 @@ int main()
 	{
 		Vertex v{
 			glm::vec3(vertices[i * 8], vertices[i * 8 + 1], vertices[i * 8 + 2]),
-			glm::vec3(vertices[i * 8 +3], vertices[i * 8 + 4], vertices[i * 8 + 5]),
+			glm::vec3(vertices[i * 8 + 3], vertices[i * 8 + 4], vertices[i * 8 + 5]),
 			glm::vec2(vertices[i * 8 + 6], vertices[i * 8 + 7])
 		};
 		_vertices.push_back(v);
@@ -210,6 +215,7 @@ int main()
 		glm::vec3(1.5f,  0.2f, -1.5f),
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
+#pragma endregion
 
 	// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
 	// 启用深度测试，需要开启GL_DEPTH_TEST
@@ -247,7 +253,7 @@ int main()
 		light->specular = glm::vec3(1);
 	}
 
-	directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
+	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
 #pragma endregion
 
 	std::cout << "开始渲染" << std::endl;
@@ -330,6 +336,12 @@ int main()
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
 			cube_mesh.Draw(*shaderProgram);
 		}
+
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0, 0, 1));
+		model = glm::scale(model, glm::vec3(0.2f));
+		shaderProgram->SetUniformMat4f("model", model);
+		nanosuit.Draw(*shaderProgram);
 
 		for (int i = 0; i < lights.size() - 1; i++)
 		{
