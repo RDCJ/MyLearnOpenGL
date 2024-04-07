@@ -181,65 +181,6 @@ int main()
 	{
 		_indices.push_back(i);
 	}
-	std::vector<Texture2D> _textures;
-	Mesh mesh(_vertices, _indices, _textures);
-
-	glm::vec3 cubePositions[] = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
-	};
-
-#pragma region MyRegion
-	// EBO是一个缓冲区，就像一个顶点缓冲区对象一样，它存储 OpenGL 用来决定要绘制哪些顶点的索引
-	unsigned int VBO[2], VAO[2];
-
-	// glGenBuffers函数用来生成缓冲区对象的名称, 第一个参数是要生成的缓冲对象的数量，第二个参数是用来存储缓冲对象名称的数组
-	glGenBuffers(2, VBO);
-	glGenVertexArrays(2, VAO);
-
-	// glBindBuffer函数把新创建的缓冲绑定到GL_ARRAY_BUFFER目标上
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
-	glBindVertexArray(VAO[0]);
-	
-	/*
-		glVertexAttribPointer函数告诉OpenGL该如何解析顶点数据
-		第一个参数指定我们要配置的顶点属性, 对应顶点着色器中的 layout (location == ?)
-		第二个参数指定顶点属性的大小
-		第三个参数指定数据的类型
-		第四个参数定义我们是否希望数据被标准化。如果设置为GL_TRUE，所有数据都会被映射到0（对于有符号型signed数据是-1）到1之间
-		第五个参数叫做步长(Stride)，它告诉我们在连续的顶点属性组之间的间隔，简单说就是从这个属性第二次出现的位置到第一次出现的位置之间有多少字节
-		最后一个参数表示位置数据在缓冲中起始位置的偏移量，类型是void*，所以需要进行强制类型转换
-
-		每个顶点属性从一个VBO管理的内存中获得它的数据，而具体是从哪个VBO（程序中可以有多个VBO）获取则是通过在调用glVertexAttribPointer时绑定到GL_ARRAY_BUFFER的VBO决定的
-	*/
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	// glEnableVertexAttribArray以顶点属性位置值作为参数，启用顶点属性；顶点属性默认是禁用的
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	glBindVertexArray(VAO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-#pragma endregion
 
 	Texture2D diffuse_map = Texture2D("Image/container2.png", "texture_diffuse");
 	diffuse_map.SetParameters();
@@ -252,6 +193,23 @@ int main()
 	Texture2D emission_map = Texture2D("Image/matrix.jpg", "texture_emission");
 	emission_map.SetParameters();
 	emission_map.GenerateMipmap();
+	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
+
+	Mesh cube_mesh(_vertices, _indices, _textures);
+	Mesh light_mesh(_vertices, _indices, std::vector<Texture2D>());
+
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
 
 	// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
 	// 启用深度测试，需要开启GL_DEPTH_TEST
@@ -268,8 +226,7 @@ int main()
 		glm::vec3(-4.0f,  2.0f, -12.0f),
 		glm::vec3(0.0f,  0.0f, -3.0f)
 	};
-	//light.linear = 0.09f;
-	//light.quadratic = 0.032f;
+
 	std::vector<Light*> lights = std::vector<Light*>();
 	for (int i = 0; i < 4; i++)
 	{
@@ -321,36 +278,16 @@ int main()
 		glm::mat4 projection = camera->GetProjection();
 #pragma endregion
 
-#pragma region 纹理
-		glActiveTexture(GL_TEXTURE0);
-		diffuse_map.Bind();
-
-		glActiveTexture(GL_TEXTURE1);
-		specular_map.Bind();
-
-		glActiveTexture(GL_TEXTURE2);
-		emission_map.Bind();
-#pragma endregion
-
 #pragma region Shader
 		//Utils::PrintVec3(camera->position);
 		shaderProgram->Use();
 
+		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 		shaderProgram->SetUniformVec3("viewPos", camera->position);
 
 		shaderProgram->SetUniformMat4f("view", view);
 		shaderProgram->SetUniformMat4f("projection", projection);
-
-		
-		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-		
-		//shaderProgram->SetUniformVec3("material.ambient", 0.24725f, 0.1995f, 0.0745f);
-		//shaderProgram->SetUniformVec3("material.diffuse", 0.75164f, 0.60648f, 0.22648f);
-		//shaderProgram->SetUniformVec3("material.specular", 0.628281f, 0.555802f, 0.366065f);
 		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
-		shaderProgram->SetUniformInt("material.diffuse", 0);
-		shaderProgram->SetUniformInt("material.specular", 1);
-		//shaderProgram->SetUniformInt("material.emission", 2);
 
 		for (int i = 0; i < lights.size(); i++)
 		{
@@ -373,8 +310,6 @@ int main()
 		}
 #pragma endregion
 
-		glBindVertexArray(VAO[0]);
-
 		for (int i = 0; i < 10; i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
@@ -392,7 +327,8 @@ int main()
 			shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
 
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			//glDrawArrays(GL_TRIANGLES, 0, 36);
+			cube_mesh.Draw(*shaderProgram);
 		}
 
 		for (int i = 0; i < lights.size() - 1; i++)
@@ -409,9 +345,7 @@ int main()
 			light_shaderProgram->SetUniformMat4f("view", view);
 			light_shaderProgram->SetUniformMat4f("projection", projection);
 
-			glBindVertexArray(VAO[1]);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			light_mesh.Draw(*light_shaderProgram);
 		}
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
