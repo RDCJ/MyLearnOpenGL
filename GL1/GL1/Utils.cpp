@@ -28,3 +28,13 @@ void Utils::PrintMat4(glm::mat4 & mat)
 	}
 	std::cout << std::endl;
 }
+
+glm::vec3 Utils::ToGlmV3(aiVector3D &v)
+{
+	return glm::vec3(v.x, v.y, v.z);
+}
+
+glm::vec2 Utils::ToGlmV2(aiVector3D& v)
+{
+	return glm::vec2(v.x, v.y);
+}
