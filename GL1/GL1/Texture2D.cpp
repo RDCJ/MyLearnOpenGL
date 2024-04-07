@@ -7,6 +7,8 @@ const std::vector<std::string> Texture2D::TextureTypes
 	"texture_emission"
 };
 
+std::unordered_map<std::string, Texture2D> Texture2D::LoadedTextures;
+
 Texture2D::Texture2D(const char* image_path, std::string _type): type(_type)
 {
 	stbi_set_flip_vertically_on_load(true);
@@ -15,32 +17,32 @@ Texture2D::Texture2D(const char* image_path, std::string _type): type(_type)
 	unsigned char* img_data = stbi_load(image_path, &width, &height, &nrChannels, 0);
 
 	if (img_data)
-		ToGL(width, height, nrChannels, img_data);
-	else
-		std::cout<< "Texture failed to load at path: " << image_path << std::endl;
-
-	stbi_image_free(img_data);
-}
-
-Texture2D::Texture2D(const char* file_name, const std::string& model_directory, std::string _type)
-{
-	std::string file_path = model_directory + "/" + std::string(file_name);
-
-	int width, height, nrChannels;
-	//读取图像文件，参数：文件路径，宽度、高度和颜色通道的个数
-	unsigned char* img_data = stbi_load(file_path.c_str(), &width, &height, &nrChannels, 0);
-
-	if (img_data)
 	{
 		ToGL(width, height, nrChannels, img_data);
 		GenerateMipmap();
 		SetParameters();
 	}
 	else
-		std::cout << "Texture failed to load at path: " << file_path << std::endl;
+		std::cout<< "Texture failed to load at path: " << image_path << std::endl;
 
 	stbi_image_free(img_data);
+}
 
+Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type)
+{
+	std::string file_path = model_directory + "/" + std::string(file_name);
+
+	auto it = Texture2D::LoadedTextures.find(file_path);
+	if (it != Texture2D::LoadedTextures.end())
+	{
+		return (*it).second;
+	}
+	else
+	{
+		Texture2D texture(file_path.c_str(), _type);
+		Texture2D::LoadedTextures[file_path] = texture;
+		return Texture2D::LoadedTextures[file_path];
+	}
 }
 
 void Texture2D::SetParameters()
