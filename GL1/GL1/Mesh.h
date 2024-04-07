@@ -27,7 +27,11 @@ class Mesh
 		void Draw(ShaderProgram& shader);
 
 	private:
-		unsigned int VAO, VBO, EBO;
+		/// <summary>
+		/// EBO是一个缓冲区，存储 OpenGL 用来决定要绘制哪些顶点的索引
+		/// </summary>
+		unsigned int EBO;
+		unsigned int VAO, VBO;
 
 		void SetupMesh();
 };
