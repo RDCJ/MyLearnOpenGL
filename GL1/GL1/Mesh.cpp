@@ -26,7 +26,7 @@ void Mesh::Draw(ShaderProgram& shader)
 		texture_count[type] = idx + 1;
 
 		// 在绑定之前激活相应的纹理单元
-		glActiveTexture(GL_TEXTURE + i);
+		glActiveTexture(GL_TEXTURE0 + i);
 		textures[i].Bind();
 	}
 
