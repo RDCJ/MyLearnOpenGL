@@ -1,9 +1,12 @@
 #pragma once
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "Shader.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "Shader.h"
+#include "Camera.h"
+#include "Light.h"
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -53,6 +56,17 @@ class ShaderProgram
 		{
 			glUseProgram(ID);
 		}
+		/// <summary>
+		/// 设置摄像机
+		/// uniform传值：viewPos，view，projection
+		/// </summary>
+		/// <param name="camera"></param>
+		void Apply(Camera& camera);
+		/// <summary>
+		/// 设置光照
+		/// </summary>
+		/// <param name="lights"></param>
+		void Apply(std::vector<Light*>& lights);
 
 		void SetUniformBool(const std::string& name, bool value) const
 		{
@@ -85,7 +99,7 @@ class ShaderProgram
 			glUniformMatrix4fv(GetUniformLocation(name.c_str()), 1, (int)transpose, glm::value_ptr(mat));
 		}
 
-		void SetUniformVec3(const std::string& name, glm::vec3& vec) const
+		void SetUniformVec3(const std::string& name, glm::vec3 vec) const
 		{
 			glUniform3f(GetUniformLocation(name.c_str()), vec.x, vec.y, vec.z);
 		}

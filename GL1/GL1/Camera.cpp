@@ -62,7 +62,7 @@ void Camera::Update()
 	//position.x = std::sin(glfwGetTime()) * radius;
 	//position.z = std::cos(glfwGetTime()) * radius;
 
-	float move_speed = 1.5f;
+	float move_speed = 3.0f;
 
 	if (glfwGetKey(window, GLFW_KEY_W))
 		position += move_speed * Time::deltaTime * Front;

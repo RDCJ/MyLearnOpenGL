@@ -152,7 +152,9 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* light_shaderProgram = new ShaderProgram("./Shader/LightVert.vert", "./Shader/LightFrag.frag");
-	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/z_buffer_shader.frag");
+	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* outline_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/SingleColor.frag");
+
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
@@ -250,10 +252,6 @@ int main()
 	};
 #pragma endregion
 
-	// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
-	// 启用深度测试，需要开启GL_DEPTH_TEST
-	glEnable(GL_DEPTH_TEST);
-
 	Time::Init();
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
@@ -275,7 +273,7 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		// glClear函数清空屏幕的颜色缓冲，它接受一个缓冲位(Buffer Bit)来指定要清空的缓冲，可能的缓冲位有GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT
 		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 
 		camera->Update();
@@ -284,53 +282,44 @@ int main()
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
 
-#pragma region MVP
-		// mvp
-		glm::mat4 view = camera->GetView();
-		glm::mat4 projection = camera->GetProjection();
-#pragma endregion
-
 #pragma region Shader
 		//Utils::PrintVec3(camera->position);
-		shaderProgram->Use();
-
-		//// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-		shaderProgram->SetUniformVec3("viewPos", camera->position);
-
-		shaderProgram->SetUniformMat4f("view", view);
-		shaderProgram->SetUniformMat4f("projection", projection);
-		shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
-
-		shaderProgram->SetUniformInt("light_num", lights.size());
-		for (int i = 0; i < lights.size(); i++)
-		{
-			Light* light = lights[i];
-
-			std::string index = "lights[" + std::to_string(i) + "]";
-			shaderProgram->SetUniformInt(index + ".type", (int)light->type);
-			shaderProgram->SetUniformVec3(index + ".position", light->position);
-			shaderProgram->SetUniformVec3(index + ".direction", light->direction);
-			shaderProgram->SetUniformFloat(index + ".innerCutOff", glm::cos(glm::radians(light->innerCutOff)));
-			shaderProgram->SetUniformFloat(index + ".outerCutOff", glm::cos(glm::radians(light->outerCutOff)));
-
-			shaderProgram->SetUniformVec3(index + ".ambient", light->ambient);
-			shaderProgram->SetUniformVec3(index + ".diffuse", light->diffuse);
-			shaderProgram->SetUniformVec3(index + ".specular", light->specular);
-
-			shaderProgram->SetUniformFloat(index + ".constant", light->type == LightType::Point ? light->constant : 1);
-			shaderProgram->SetUniformFloat(index + ".linear", light->type == LightType::Point ? light->linear : 0);
-			shaderProgram->SetUniformFloat(index + ".quadratic", light->type == LightType::Point ? light->quadratic : 0);
-		}
+		// 
+		
 #pragma endregion
 
 		for (int i = 0; i < 10; i++)
 		{
+			// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
+			// 启用深度测试，需要开启GL_DEPTH_TEST
+			glEnable(GL_DEPTH_TEST);
+			// 启用模板测试
+			glEnable(GL_STENCIL_TEST);
+			// 设置测试通过或失败时的行为
+			// 第一个参数：模板测试失败时采取的行为, 
+			// 第二个参数：模板测试通过，但深度测试失败时采取的行为, 
+			// 第三个参数：模板测试和深度测试都通过时采取的行为
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			// 设置模板函数
+			// 第一个参数：设置模板测试函数(Stencil Test Function)。这个测试函数将会应用到已储存的模板值上和glStencilFunc函数的ref值上。
+			//		可用的选项有：GL_NEVER、GL_LESS、GL_LEQUAL、GL_GREATER、GL_GEQUAL、GL_EQUAL、GL_NOTEQUAL和GL_ALWAYS
+			// 第二个参数：设置了模板测试的参考值。模板缓冲的内容将会与这个值进行比较
+			// 第三个参数：设置一个掩码，它将会与参考值和储存的模板值在测试比较它们之前进行与(AND)运算。初始情况下所有位都为1
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			// 设置模板缓冲更新前的掩码，它会与将要写入缓冲的模板值进行与(AND)运算
+			glStencilMask(0xFF);
+
 			glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
 			model = glm::translate(model, cubePositions[i]);
 
 			float angle = 29 * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
+			shaderProgram->Use();
 			shaderProgram->SetUniformMat4f("model", model);
+			shaderProgram->Apply(*camera);
+			shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
+			shaderProgram->Apply(lights);
 
 			// 计算法线矩阵，用于把法向量转换为世界空间坐标
 			// 法线应该只受缩放和旋转变换的影响，而不受位移
@@ -342,11 +331,34 @@ int main()
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
 			cube_mesh.Draw(*shaderProgram);
+
+			// 使用GL_ALWAYS模板测试函数，我们保证了片段永远会通过模板测试，在绘制片段的地方，模板缓冲会被更新为参考值1
+			// 模板函数设置为GL_NOTEQUAL：当前模板缓冲值不为1的片元才能通过模板测试
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+			// 将掩码值设为0， 禁止模板缓冲更新
+			glStencilMask(0x00);
+			//glDisable(GL_DEPTH_TEST);
+
+			model = glm::scale(model, glm::vec3(1.05));
+			outline_shader->Use();
+			outline_shader->SetUniformMat4f("model", model);
+			outline_shader->Apply(*camera);
+			outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f* (i+1), 0));
+			cube_mesh.Draw(*outline_shader);
+
+			// glStencilMask(0x00)不仅会阻止模板缓冲的写入，也会阻止其清空(glClear(stencil_buffer)无效)
+			// 因此需要重设为0xFF
+			glStencilMask(0xFF);
+			glEnable(GL_DEPTH_TEST);
+			// 关闭模板测试
+			glDisable(GL_STENCIL_TEST);
 		}
 
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0, 0, 1));
 		model = glm::scale(model, glm::vec3(0.1f));
+
+		shaderProgram->Use();
 		shaderProgram->SetUniformMat4f("model", model);
 		nanosuit.Draw(*shaderProgram);
 
@@ -355,15 +367,14 @@ int main()
 			Light* light = lights[i];
 
 			light_shaderProgram->Use();
+			light_shaderProgram->Apply(*camera);
 			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
 
 			auto lightModel = glm::mat4(1.0f);
 			lightModel = glm::translate(lightModel, light->position);
 			lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 			light_shaderProgram->SetUniformMat4f("model", lightModel);
-			light_shaderProgram->SetUniformMat4f("view", view);
-			light_shaderProgram->SetUniformMat4f("projection", projection);
-
+			
 			light_mesh.Draw(*light_shaderProgram);
 		}
 
