@@ -20,6 +20,7 @@
 #include "Light.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "Transform.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;

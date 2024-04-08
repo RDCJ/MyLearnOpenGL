@@ -7,6 +7,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Transform.h"
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -67,6 +68,11 @@ class ShaderProgram
 		/// </summary>
 		/// <param name="lights"></param>
 		void Apply(std::vector<Light*>& lights);
+		/// <summary>
+		/// 设置model、NormalMatrix
+		/// </summary>
+		/// <param name="transform"></param>
+		void Apply(Transform& transform);
 
 		void SetUniformBool(const std::string& name, bool value) const
 		{

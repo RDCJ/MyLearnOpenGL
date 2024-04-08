@@ -67,3 +67,12 @@ void ShaderProgram::Apply(std::vector<Light*>& lights)
 	}
 
 }
+
+void ShaderProgram::Apply(Transform& transform)
+{
+	auto model = transform.GetModel();
+	this->SetUniformMat4f("model", model);
+
+	glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
+	this->SetUniformMat3f("NormalMatrix", normal_matrix);
+}
