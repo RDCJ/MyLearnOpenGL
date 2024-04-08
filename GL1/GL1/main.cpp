@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 #include "ShaderProgram.h"
 #include "stb_image.h"
 #include "Shader.h"
@@ -152,8 +151,9 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* light_shaderProgram = new ShaderProgram("./Shader/LightVert.vert", "./Shader/LightFrag.frag");
-	ShaderProgram* shaderProgram = new ShaderProgram("./Shader/shader.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* phong_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/phong_shader.frag");
 	ShaderProgram* outline_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/SingleColor.frag");
+	ShaderProgram* blend_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/blend_shader.frag");
 
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
@@ -252,6 +252,24 @@ int main()
 	};
 #pragma endregion
 
+#pragma region grass model
+	std::vector<Vertex> square_vertices
+	{
+		Vertex {glm::vec3(-0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
+		Vertex {glm::vec3(0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
+		Vertex {glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
+		Vertex {glm::vec3(-0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
+	};
+	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
+	
+	std::vector<Texture2D> grass_texture{ Texture2D("./Image/grass.png", "texture_diffuse") };
+	std::vector<Texture2D> window_Texture{ Texture2D("./Image/red_window.png", "texture_diffuse") };
+
+	Mesh grass_mesh(square_vertices, square_indices, grass_texture);
+	Mesh window_mesh(square_vertices, square_indices, window_Texture);
+#pragma endregion
+
+
 	Time::Init();
 
 	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
@@ -259,6 +277,10 @@ int main()
 #pragma region 配置光源
 	auto lights = CreateLight();
 #pragma endregion
+	// 启用混合
+	glEnable(GL_BLEND);
+	// glBlendFunc函数接受两个参数，来设置源和目标因子
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -269,6 +291,8 @@ int main()
 
 		ProcessInput(window);
 
+		glEnable(GL_DEPTH_TEST);
+
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		// glClear函数清空屏幕的颜色缓冲，它接受一个缓冲位(Buffer Bit)来指定要清空的缓冲，可能的缓冲位有GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT
@@ -278,16 +302,10 @@ int main()
 
 		camera->Update();
 
-		//light.Update();
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
 
-#pragma region Shader
-		//Utils::PrintVec3(camera->position);
-		// 
-		
-#pragma endregion
-
+#pragma region box
 		for (int i = 0; i < 10; i++)
 		{
 			// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
@@ -315,22 +333,22 @@ int main()
 			float angle = 29 * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-			shaderProgram->Use();
-			shaderProgram->SetUniformMat4f("model", model);
-			shaderProgram->Apply(*camera);
-			shaderProgram->SetUniformFloat("material.shininess", 0.4f * 128);
-			shaderProgram->Apply(lights);
+			phong_shader->Use();
+			phong_shader->SetUniformMat4f("model", model);
+			phong_shader->Apply(*camera);
+			phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
+			phong_shader->Apply(lights);
 
 			// 计算法线矩阵，用于把法向量转换为世界空间坐标
 			// 法线应该只受缩放和旋转变换的影响，而不受位移
 			// 不等比缩放会导致法向量不再垂直于对应的表面
 			// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
 			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-			shaderProgram->SetUniformMat3f("NormalMatrix", normal_matrix);
+			phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
 
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
-			cube_mesh.Draw(*shaderProgram);
+			cube_mesh.Draw(*phong_shader);
 
 			// 使用GL_ALWAYS模板测试函数，我们保证了片段永远会通过模板测试，在绘制片段的地方，模板缓冲会被更新为参考值1
 			// 模板函数设置为GL_NOTEQUAL：当前模板缓冲值不为1的片元才能通过模板测试
@@ -343,7 +361,7 @@ int main()
 			outline_shader->Use();
 			outline_shader->SetUniformMat4f("model", model);
 			outline_shader->Apply(*camera);
-			outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f* (i+1), 0));
+			outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
 			cube_mesh.Draw(*outline_shader);
 
 			// glStencilMask(0x00)不仅会阻止模板缓冲的写入，也会阻止其清空(glClear(stencil_buffer)无效)
@@ -353,15 +371,27 @@ int main()
 			// 关闭模板测试
 			glDisable(GL_STENCIL_TEST);
 		}
-
+#pragma endregion
+		
+#pragma region nanosuit
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0, 0, 1));
 		model = glm::scale(model, glm::vec3(0.1f));
 
-		shaderProgram->Use();
-		shaderProgram->SetUniformMat4f("model", model);
-		nanosuit.Draw(*shaderProgram);
+		phong_shader->Use();
+		phong_shader->Apply(*camera);
+		phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
+		phong_shader->Apply(lights);
 
+		phong_shader->SetUniformMat4f("model", model);
+
+		glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
+		phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
+
+		nanosuit.Draw(*phong_shader);
+#pragma endregion
+
+#pragma region  light box
 		for (int i = 0; i < lights.size() - 1; i++)
 		{
 			Light* light = lights[i];
@@ -374,9 +404,38 @@ int main()
 			lightModel = glm::translate(lightModel, light->position);
 			lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 			light_shaderProgram->SetUniformMat4f("model", lightModel);
-			
+
 			light_mesh.Draw(*light_shaderProgram);
 		}
+#pragma endregion
+
+#pragma region  grass
+		blend_shader->Use();
+		blend_shader->Apply(*camera);
+
+		auto grass_model = glm::mat4(1.0f);
+		grass_model = glm::translate(grass_model, glm::vec3(0, 0, 2));
+		blend_shader->SetUniformMat4f("model", grass_model);
+		normal_matrix = glm::mat3(glm::transpose(glm::inverse(grass_model)));
+		blend_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
+		grass_mesh.Draw(*blend_shader);
+#pragma endregion
+
+#pragma region window
+		blend_shader->Use();
+		blend_shader->Apply(*camera);
+
+		for (int i = 0; i < 2; i++)
+		{
+			auto window_model = glm::mat4(1.0f);
+			window_model = glm::translate(window_model, glm::vec3(0, 0, 3+ i));
+			blend_shader->SetUniformMat4f("model", window_model);
+			normal_matrix = glm::mat3(glm::transpose(glm::inverse(window_model)));
+			blend_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
+			window_mesh.Draw(*blend_shader);
+		}
+		
+#pragma endregion
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
