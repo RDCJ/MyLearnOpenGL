@@ -157,11 +157,21 @@ int main()
 	ShaderProgram* phong_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/phong_shader.frag");
 	ShaderProgram* outline_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/SingleColor.frag");
 	ShaderProgram* blend_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/blend_shader.frag");
+	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
 	Model nanosuit("./Model/nanosuit/nanosuit.obj");
+
+	std::vector<Vertex> square_vertices
+	{
+		Vertex {glm::vec3(-0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
+		Vertex {glm::vec3(0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
+		Vertex {glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
+		Vertex {glm::vec3(-0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
+	};
+	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
 
 #pragma region cube model
 	float vertices[] = {
@@ -256,15 +266,6 @@ int main()
 #pragma endregion
 
 #pragma region grass model
-	std::vector<Vertex> square_vertices
-	{
-		Vertex {glm::vec3(-0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
-		Vertex {glm::vec3(0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
-		Vertex {glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
-		Vertex {glm::vec3(-0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
-	};
-	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
-	
 	std::vector<Texture2D> grass_texture{ Texture2D("./Image/grass.png", "texture_diffuse") };
 	std::vector<Texture2D> window_Texture{ Texture2D("./Image/red_window.png", "texture_diffuse") };
 
@@ -297,6 +298,62 @@ int main()
 	// glBlendFunc函数接受两个参数，来设置源和目标因子
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
+#pragma region 创建帧缓冲
+	unsigned int frame_buffer;
+	// 创建一个帧缓冲对象
+	glGenFramebuffers(1, &frame_buffer);
+	// glBindFramebuffer: 绑定帧缓冲, 绑定到GL_FRAMEBUFFER目标之后，所有的读取和写入帧缓冲的操作将会影响当前绑定的帧缓冲
+	glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
+	// 给帧缓冲创建附件的时候，我们有两个选项：纹理或渲染缓冲对象
+
+	// 附加纹理
+	unsigned int texColorBuffer;
+	glGenTextures(1, &texColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, ScreenWidth, ScreenHeight, 0, GL_RGB, GL_UNSIGNED_INT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
+	// glFramebufferTexture2D参数：
+	// target：帧缓冲的目标（绘制、读取或者两者皆有）
+	// attachment：我们想要附加的附件类型。当前我们正在附加一个颜色附件。注意最后的0意味着我们可以附加多个颜色附件。我们将在之后的教程中提到。
+	//	textarget：你希望附加的纹理类型
+	// texture：要附加的纹理id
+	//	level：mipmap的级别
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+
+	// 附加渲染缓冲对象
+	// 渲染缓冲对象的数据储存为OpenGL原生的渲染格式，它是为离屏渲染到帧缓冲优化过
+	// 当写入或者复制它的数据到其它缓冲中时是非常快的。所以，交换缓冲这样的操作在使用渲染缓冲对象时会非常快
+	// 渲染缓冲对象通常都是只写的，所以你不能读取它们（比如使用纹理访问）
+	// 由于渲染缓冲对象通常都是只写的，它们会经常用于深度和模板附件，因为大部分时间我们都不需要从深度和模板缓冲中读取值，只关心深度和模板测试
+	unsigned int rbo;
+	// 创建一个渲染缓冲对象
+	glGenRenderbuffers(1, &rbo);
+	// 绑定渲染缓冲对象rbo到GL_RENDERBUFFER，让之后所有的渲染缓冲操作影响当前的rbo
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	// 给渲染缓冲对象分配内存。
+	// GL_DEPTH24_STENCIL8作为内部格式，它封装了24位的深度和8位的模板缓冲，将该渲染缓冲对象用于深度和模板渲染缓冲
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, ScreenWidth, ScreenHeight);
+	// 解绑
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	// 将渲染缓冲对象附加到帧缓冲上
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	// 检查帧缓冲是否是完整的，如果不是，将打印错误信息。
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	}
+	// 解绑帧缓冲
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	Mesh frame_buffer_mesh(square_vertices, square_indices, std::vector<Texture2D>());
+#pragma endregion
+
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -305,6 +362,10 @@ int main()
 		Time::Update();
 
 		ProcessInput(window);
+		camera->Update();
+
+		// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
+		glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -315,7 +376,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 
-		camera->Update();
+		
 
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
@@ -418,6 +479,7 @@ int main()
 #pragma endregion
 
 #pragma region 带透明度的物体
+		glDisable(GL_CULL_FACE);
 		std::vector<Object> objs(3);
 
 		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
@@ -444,6 +506,22 @@ int main()
 			it->second->Draw(*blend_shader);
 		}
 #pragma endregion
+
+		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
+		// 解绑帧缓冲
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		// 清除屏幕的颜色和缓冲
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		// 将附加纹理作为贴图，渲染一个四边形
+		frame_buffer_shader->Use();
+		frame_buffer_shader->SetUniformInt("tex", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		frame_buffer_mesh.Draw(*frame_buffer_shader);
+
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
