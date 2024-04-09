@@ -6,6 +6,7 @@
 
 #include "Texture2D.h"
 #include "ShaderProgram.h"
+#include "IDrawable.h"
 
 class Vertex
 {
@@ -15,7 +16,7 @@ class Vertex
 		glm::vec2 TexCoords;
 };
 
-class Mesh
+class Mesh : public IDrawable
 {
 	public:
 		std::vector<Vertex> vertices;
@@ -24,7 +25,7 @@ class Mesh
 
 		Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture2D> _textures);
 
-		void Draw(ShaderProgram& shader);
+		void Draw(ShaderProgram& shader) override;
 
 	private:
 		/// <summary>

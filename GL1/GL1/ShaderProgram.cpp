@@ -73,6 +73,10 @@ void ShaderProgram::Apply(Transform& transform)
 	auto model = transform.GetModel();
 	this->SetUniformMat4f("model", model);
 
+	// 计算法线矩阵，用于把法向量转换为世界空间坐标
+	// 法线应该只受缩放和旋转变换的影响，而不受位移影响
+	// 不等比缩放会导致法向量不再垂直于对应的表面
+	// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
 	glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
 	this->SetUniformMat3f("NormalMatrix", normal_matrix);
 }

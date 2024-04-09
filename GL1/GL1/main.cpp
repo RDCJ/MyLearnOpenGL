@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -21,6 +22,7 @@
 #include "Mesh.h"
 #include "Model.h"
 #include "Transform.h"
+#include "Object.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -375,19 +377,14 @@ int main()
 #pragma endregion
 		
 #pragma region nanosuit
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0, 0, 1));
-		model = glm::scale(model, glm::vec3(0.1f));
+
+		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.1f));
 
 		phong_shader->Use();
 		phong_shader->Apply(*camera);
 		phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
 		phong_shader->Apply(lights);
-
-		phong_shader->SetUniformMat4f("model", model);
-
-		glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-		phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
+		phong_shader->Apply(transform);
 
 		nanosuit.Draw(*phong_shader);
 #pragma endregion
@@ -401,41 +398,39 @@ int main()
 			light_shaderProgram->Apply(*camera);
 			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
 
-			auto lightModel = glm::mat4(1.0f);
-			lightModel = glm::translate(lightModel, light->position);
-			lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-			light_shaderProgram->SetUniformMat4f("model", lightModel);
+			transform = Transform(light->position, glm::vec3(0.2f));
+			light_shaderProgram->Apply(transform);
 
 			light_mesh.Draw(*light_shaderProgram);
 		}
 #pragma endregion
 
-#pragma region  grass
-		blend_shader->Use();
-		blend_shader->Apply(*camera);
+#pragma region 带透明度的物体
+		std::vector<Object> objs(3);
 
-		auto grass_model = glm::mat4(1.0f);
-		grass_model = glm::translate(grass_model, glm::vec3(0, 0, 2));
-		blend_shader->SetUniformMat4f("model", grass_model);
-		normal_matrix = glm::mat3(glm::transpose(glm::inverse(grass_model)));
-		blend_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
-		grass_mesh.Draw(*blend_shader);
-#pragma endregion
-
-#pragma region window
-		blend_shader->Use();
-		blend_shader->Apply(*camera);
+		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
+		objs.emplace(objs.end(), &grass_mesh, transform);
 
 		for (int i = 0; i < 2; i++)
 		{
-			auto window_model = glm::mat4(1.0f);
-			window_model = glm::translate(window_model, glm::vec3(0, 0, 3+ i));
-			blend_shader->SetUniformMat4f("model", window_model);
-			normal_matrix = glm::mat3(glm::transpose(glm::inverse(window_model)));
-			blend_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
-			window_mesh.Draw(*blend_shader);
+			transform = Transform(glm::vec3(0, 0, 4- i), glm::vec3(1.0f));
+			objs.emplace(objs.end(), &window_mesh, transform);
+		}
+
+		std::map<float, Object*> sorted;
+		for (int i = 0; i < objs.size(); i++)
+		{
+			float dist = glm::length(objs[i].transform.position - camera->position);
+			sorted[dist] = &objs[i];
 		}
 		
+		for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
+		{
+			blend_shader->Use();
+			blend_shader->Apply(*camera);
+			blend_shader->Apply(it->second->transform);
+			it->second->Draw(*blend_shader);
+		}
 #pragma endregion
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上

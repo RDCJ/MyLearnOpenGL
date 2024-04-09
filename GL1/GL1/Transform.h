@@ -17,7 +17,6 @@ class Transform
 			return model;
 		}
 
-
 		Transform()
 		{
 			position = glm::vec3(0);
