@@ -166,10 +166,10 @@ int main()
 
 	std::vector<Vertex> square_vertices
 	{
-		Vertex {glm::vec3(-0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
-		Vertex {glm::vec3(0.5, -0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
-		Vertex {glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
-		Vertex {glm::vec3(-0.5, 0.5, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
+		Vertex {glm::vec3(-1, -1, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
+		Vertex {glm::vec3(1, -1, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
+		Vertex {glm::vec3(1, 1, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
+		Vertex {glm::vec3(-1, 1, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
 	};
 	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
 
@@ -300,6 +300,10 @@ int main()
 
 
 #pragma region 创建帧缓冲
+	const float frame_buffer_scale = 0.07f;
+	const int frame_buffer_width = ScreenWidth * frame_buffer_scale;
+	const int frame_buffer_height = ScreenHeight * frame_buffer_scale;
+
 	unsigned int frame_buffer;
 	// 创建一个帧缓冲对象
 	glGenFramebuffers(1, &frame_buffer);
@@ -312,9 +316,9 @@ int main()
 	glGenTextures(1, &texColorBuffer);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, ScreenWidth, ScreenHeight, 0, GL_RGB, GL_UNSIGNED_INT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_buffer_width, frame_buffer_height, 0, GL_RGB, GL_UNSIGNED_INT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	// 核在对屏幕纹理的边缘进行采样的时候，由于还会对中心像素周围的8个像素进行采样，其实会取到纹理之外的像素。
 	// 由于环绕方式默认是GL_REPEAT，所以在没有设置的情况下取到的是屏幕另一边的像素，而另一边的像素本不应该对中心像素产生影响，这就可能会在屏幕边缘产生很奇怪的条纹。
 	// 为了消除这一问题，我们可以将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE。
@@ -343,7 +347,7 @@ int main()
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 	// 给渲染缓冲对象分配内存。
 	// GL_DEPTH24_STENCIL8作为内部格式，它封装了24位的深度和8位的模板缓冲，将该渲染缓冲对象用于深度和模板渲染缓冲
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, ScreenWidth, ScreenHeight);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame_buffer_width, frame_buffer_height);
 	// 解绑
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// 将渲染缓冲对象附加到帧缓冲上
@@ -370,6 +374,7 @@ int main()
 		ProcessInput(window);
 		camera->Update();
 
+		glViewport(0, 0, frame_buffer_width, frame_buffer_height);
 		// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
 		glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
 
@@ -513,6 +518,7 @@ int main()
 		}
 #pragma endregion
 
+		glViewport(0, 0, ScreenWidth, ScreenHeight);
 		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
 		// 解绑帧缓冲
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
