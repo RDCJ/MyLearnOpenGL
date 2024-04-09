@@ -23,6 +23,7 @@
 #include "Model.h"
 #include "Transform.h"
 #include "Object.h"
+#include "TextureCubeMap.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -273,6 +274,79 @@ int main()
 	Mesh window_mesh(square_vertices, square_indices, window_Texture);
 #pragma endregion
 
+#pragma region skybox
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
+	};
+	
+	std::vector<Vertex> skybox_vertices;
+	for (int i = 0; i < 36; i++)
+	{
+		Vertex v{
+			glm::vec3(skyboxVertices[i * 3], skyboxVertices[i * 3 + 1], skyboxVertices[i * 3 + 2]),
+			glm::vec3(0), glm::vec2(0)
+		};
+		skybox_vertices.push_back(v);
+	}
+
+	Mesh skybox_mesh(skybox_vertices, _indices, std::vector<Texture2D>());
+
+	std::vector<std::string> skybox_img_paths{
+		"right.jpg",
+		"left.jpg",
+		"top.jpg",
+		"bottom.jpg",
+		"front.jpg",
+		"back.jpg"
+	};
+	for (int i = 0; i < skybox_img_paths.size(); i++)
+		skybox_img_paths[i] = "./Image/skybox/" + skybox_img_paths[i];
+	TextureCubeMap skybox_texture(skybox_img_paths);
+
+#pragma endregion
+
+
 
 	Time::Init();
 
@@ -364,6 +438,7 @@ int main()
 	Mesh frame_buffer_mesh(square_vertices, square_indices, std::vector<Texture2D>());
 #pragma endregion
 
+	bool use_frame_buffer = false;
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -374,9 +449,12 @@ int main()
 		ProcessInput(window);
 		camera->Update();
 
-		glViewport(0, 0, frame_buffer_width, frame_buffer_height);
-		// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
-		glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
+		if (use_frame_buffer)
+		{
+			glViewport(0, 0, frame_buffer_width, frame_buffer_height);
+			// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
+			glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
+		}
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -386,9 +464,6 @@ int main()
 		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
-
-		
-
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
 
@@ -518,22 +593,24 @@ int main()
 		}
 #pragma endregion
 
-		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
-		// 解绑帧缓冲
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
-		// 清除屏幕的颜色和缓冲
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		if (use_frame_buffer)
+		{
+			glViewport(0, 0, ScreenWidth, ScreenHeight);
+			// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
+			// 解绑帧缓冲
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDisable(GL_DEPTH_TEST);
+			// 清除屏幕的颜色和缓冲
+			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-		// 将附加纹理作为贴图，渲染一个四边形
-		frame_buffer_shader->Use();
-		frame_buffer_shader->SetUniformInt("tex", 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-		frame_buffer_mesh.Draw(*frame_buffer_shader);
-
+			// 将附加纹理作为贴图，渲染一个四边形
+			frame_buffer_shader->Use();
+			frame_buffer_shader->SetUniformInt("tex", 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+			frame_buffer_mesh.Draw(*frame_buffer_shader);
+		}
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);

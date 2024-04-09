@@ -85,7 +85,6 @@ void Texture2D::ToGL(int width, int height, int nChannel, unsigned char* img_dat
 			format = GL_RGBA;
 			break;
 	}
-
 	/*glTexImage2D生成纹理，当前绑定的纹理对象就会被附加上纹理图像
 	第一个参数指定了纹理目标(Target)。设置为GL_TEXTURE_2D意味着会生成与当前绑定的纹理对象在同一个目标上的纹理（任何绑定到GL_TEXTURE_1D和GL_TEXTURE_3D的纹理不会受到影响）。
 	第二个参数为纹理指定mipmap的级别。0表示基本级别。
