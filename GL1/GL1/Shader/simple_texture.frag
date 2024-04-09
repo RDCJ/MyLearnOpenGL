@@ -6,11 +6,35 @@ out vec4 FragColor;
 
 uniform sampler2D tex;
 
+const float offset = 1.0 / 600.0; 
+
 void main(){
-    // 移除场景中除了黑白灰以外所有的颜色，让整个图像灰度化
-    FragColor = texture(tex, TexCoord);
-    // 人眼会对绿色更加敏感一些，而对蓝色不那么敏感，所以为了获取物理上更精确的效果，我们需要使用加权的(Weighted)通道
-    vec3 weight = vec3(0.2126, 0.7152, 0.0722);
-    float average = dot(weight, vec3(FragColor));
-    FragColor = vec4(average, average, average, 1.0);
+    vec2 offsets[9] = vec2[](
+        vec2(-offset,  offset), // 左上
+        vec2( 0.0f,    offset), // 正上
+        vec2( offset,  offset), // 右上
+        vec2(-offset,  0.0f),   // 左
+        vec2( 0.0f,    0.0f),   // 中
+        vec2( offset,  0.0f),   // 右
+        vec2(-offset, -offset), // 左下
+        vec2( 0.0f,   -offset), // 正下
+        vec2( offset, -offset)  // 右下
+    );
+
+    // 大部分核将所有的权重加起来之后都应该会等于1，
+    // 如果它们加起来不等于1，这就意味着最终的纹理颜色将会比原纹理值更亮或者更暗了
+    float kernel[9] = float[](
+        -1, -1, -1,
+        -1,  9, -1,
+        -1, -1, -1
+    );
+
+    // 卷积
+    vec3 col = vec3(0.0);
+    for(int i = 0; i < 9; i++)
+    {
+        col += kernel[i] * vec3(texture(tex, TexCoord.st + offsets[i]));
+    }
+
+    FragColor = vec4(col, 1.0);
 }
