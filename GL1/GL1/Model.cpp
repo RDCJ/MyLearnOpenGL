@@ -2,8 +2,11 @@
 
 void Model::Draw(ShaderProgram& shader)
 {
-	for (Mesh& mesh : meshes)
-		mesh.Draw(shader);
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		shader.Apply(materials[i]);
+		meshes[i].Draw(shader);
+	}
 }
 
 void Model::LoadModel(std::string path)
@@ -35,7 +38,9 @@ void Model::ProcessNode(aiNode * node, const aiScene * scene)
 	{
 		// Scene下的mMeshes数组储存了真正的Mesh对象，节点中的mMeshes数组保存的只是场景中网格数组的索引。
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(ProcessMesh(mesh, scene));
+		auto result = ProcessMesh(mesh, scene);
+		meshes.push_back(std::get<0>(result));
+		materials.push_back(std::get<1>(result));
 	}
 
 	// 接下来对它的子节点重复这一过程
@@ -43,7 +48,7 @@ void Model::ProcessNode(aiNode * node, const aiScene * scene)
 		ProcessNode(node->mChildren[i], scene);
 }
 
-Mesh Model::ProcessMesh(aiMesh * mesh, const aiScene * scene)
+std::tuple<Mesh, Material> Model::ProcessMesh(aiMesh * mesh, const aiScene * scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
@@ -86,11 +91,13 @@ Mesh Model::ProcessMesh(aiMesh * mesh, const aiScene * scene)
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 		std::vector<Texture2D> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		std::vector<Texture2D> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		std::vector<Texture2D> ambientMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ambient");
 
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+		textures.insert(textures.end(), ambientMaps.begin(), ambientMaps.end());
 	}
-	return Mesh(vertices, indices, textures);
+	return std::make_tuple(Mesh(vertices, indices), Material(textures));
 }
 
 std::vector<Texture2D> Model::LoadMaterialTextures(aiMaterial* material, aiTextureType type, std::string typeName)

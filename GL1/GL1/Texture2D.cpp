@@ -4,7 +4,8 @@ const std::vector<std::string> Texture2D::TextureTypes
 {
 	"texture_diffuse",
 	"texture_specular",
-	"texture_emission"
+	"texture_emission",
+	"texture_ambient"
 };
 
 std::unordered_map<std::string, Texture2D> Texture2D::LoadedTextures;

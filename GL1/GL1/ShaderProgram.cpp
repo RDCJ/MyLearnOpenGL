@@ -83,3 +83,43 @@ void ShaderProgram::Apply(Transform& transform)
 	glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
 	this->SetUniformMat3f("NormalMatrix", normal_matrix);
 }
+
+void ShaderProgram::Apply(TextureCubeMap& cube_map)
+{
+	this->SetUniformBool("use_cube_map", true);
+
+	this->SetUniformInt("cube_map", 0);
+	glActiveTexture(GL_TEXTURE0);
+	cube_map.Bind();
+}
+
+void ShaderProgram::Apply(Material& material)
+{
+	if (material.cube_map != nullptr)
+	{
+		this->SetUniformInt("cube_map", 0);
+		glActiveTexture(GL_TEXTURE0);
+		material.cube_map->Bind();
+	}
+
+	// 绑定纹理
+	std::map<std::string, unsigned int> texture_count;
+	for (std::string texture_type : Texture2D::TextureTypes) texture_count[texture_type] = 0;
+
+	for (int i = 0; i < material.textures.size(); i++)
+	{
+		std::string& type = material.textures[i].type;
+		unsigned int idx = texture_count[type];
+		// 纹理命名规则：material.texture_{type}{idx}
+		this->SetUniformInt("material." + type + std::to_string(idx), i + 1);
+		texture_count[type] = idx + 1;
+		// 在绑定之前激活相应的纹理单元
+		glActiveTexture(GL_TEXTURE0 + i + 1);
+		material.textures[i].Bind();
+	}
+
+	this->SetUniformFloat("material.shininess", material.shininess);
+	this->SetUniformFloat("material.refract_ratio", material.refract_ratio);
+}
+
+

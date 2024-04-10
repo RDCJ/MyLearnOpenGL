@@ -14,6 +14,8 @@ struct Material
     sampler2D texture_emission0;
     sampler2D texture_emission1;
     sampler2D texture_emission2;
+
+    sampler2D texture_ambient0;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
 
@@ -114,7 +116,8 @@ vec4 CalcEnvironmentReflection(vec3 normal, vec3 viewDir)
     // 计算由观察方向(摄像机->片段)关于法线的反射方向
     vec3 reflectDir = reflect(viewDir, normal);
     // 用反射方向在立方体贴图上采样
-    return texture(cube_map, reflectDir);
+    return texture(material.texture_ambient0, TexCoord) * texture(cube_map, reflectDir);
+    //return texture(cube_map, reflectDir);
 }
 
 vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
@@ -137,8 +140,8 @@ void main()
     
     if (use_cube_map == 1)
     {
-        //result += vec3(CalcEnvironmentReflection(norm, -viewDir));
-        result += vec3(CalcEnvironmentRefraction(norm, -viewDir));
+        result += vec3(CalcEnvironmentReflection(norm, -viewDir));
+        //result += vec3(CalcEnvironmentRefraction(norm, -viewDir));
     }
     FragColor = vec4(result, 1.0f);
 } 

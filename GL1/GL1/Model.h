@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <tuple>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -22,6 +23,8 @@
 class Model: IDrawable
 {
 	public:
+		std::vector<Mesh> meshes;
+		std::vector<Material> materials;
 		Model(const char* path)
 		{
 			LoadModel(path);
@@ -34,7 +37,6 @@ class Model: IDrawable
 		void Draw(ShaderProgram& shader) override;
 
 	private:
-		std::vector<Mesh> meshes;
 		/// <summary>
 		/// 模型文件路径
 		/// </summary>
@@ -57,7 +59,7 @@ class Model: IDrawable
 		/// <param name="mesh"></param>
 		/// <param name="scene"></param>
 		/// <returns></returns>
-		Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene);
+		std::tuple<Mesh, Material> ProcessMesh(aiMesh* mesh, const aiScene* scene);
 		std::vector<Texture2D> LoadMaterialTextures(aiMaterial* material, aiTextureType type, std::string typeName);
 };
 #endif // !MODEL_H

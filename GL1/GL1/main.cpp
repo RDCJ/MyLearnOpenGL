@@ -24,6 +24,7 @@
 #include "Transform.h"
 #include "Object.h"
 #include "TextureCubeMap.h"
+#include "Material.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -161,10 +162,13 @@ int main()
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 
+	Material empty_material;
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
 	Model nanosuit("./Model/nanosuit/nanosuit.obj");
+	for (int i = 0; i < nanosuit.materials.size(); i++)
+		nanosuit.materials[i].shininess = 0.4f * 128;
 
 	std::vector<Vertex> square_vertices
 	{
@@ -264,9 +268,9 @@ int main()
 	emission_map.GenerateMipmap();
 	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
 
-	//Mesh cube_mesh(_vertices, _indices, _textures, &skybox_texture);
-	Mesh cube_mesh(_vertices, _indices, std::vector<Texture2D>(), &skybox_texture);
-	Mesh light_mesh(_vertices, _indices, std::vector<Texture2D>());
+	Material cube_material(_textures, 0.4f * 128, 1.0 / 1.52);
+	Mesh cube_mesh(_vertices, _indices);
+	Mesh light_mesh(_vertices, _indices);
 
 	glm::vec3 cubePositions[] = {
 		glm::vec3(0.0f,  0.0f,  0.0f),
@@ -286,8 +290,11 @@ int main()
 	std::vector<Texture2D> grass_texture{ Texture2D("./Image/grass.png", "texture_diffuse") };
 	std::vector<Texture2D> window_Texture{ Texture2D("./Image/red_window.png", "texture_diffuse") };
 
-	Mesh grass_mesh(square_vertices, square_indices, grass_texture);
-	Mesh window_mesh(square_vertices, square_indices, window_Texture);
+	Material grass_material(grass_texture);
+	Material window_material(window_Texture);
+
+	Mesh grass_mesh(square_vertices, square_indices);
+	Mesh window_mesh(square_vertices, square_indices);
 #pragma endregion
 
 #pragma region skybox
@@ -346,7 +353,8 @@ int main()
 		skybox_vertices.push_back(v);
 	}
 
-	Mesh skybox_mesh(skybox_vertices, _indices, std::vector<Texture2D>());
+	Material skybox_material(&skybox_texture);
+	Mesh skybox_mesh(skybox_vertices, _indices);
 #pragma endregion
 
 	Time::Init();
@@ -436,11 +444,12 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-	Mesh frame_buffer_mesh(square_vertices, square_indices, std::vector<Texture2D>());
+	Mesh frame_buffer_mesh(square_vertices, square_indices);
 #pragma endregion
 
 	bool use_frame_buffer = false;
 	bool use_box_outline = false;
+	bool active_skybox = true;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -505,8 +514,7 @@ int main()
 			phong_shader->Use();
 			phong_shader->SetUniformMat4f("model", model);
 			phong_shader->Apply(*camera);
-			phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
-			phong_shader->SetUniformFloat("material.refract_ratio", 1.0 / 1.52);
+			
 			phong_shader->Apply(lights);
 
 			// 计算法线矩阵，用于把法向量转换为世界空间坐标
@@ -516,6 +524,8 @@ int main()
 			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
 			phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
 
+			phong_shader->Apply(*skybox_material.cube_map);
+			phong_shader->Apply(cube_material);
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
 			cube_mesh.Draw(*phong_shader);
@@ -552,9 +562,9 @@ int main()
 
 		phong_shader->Use();
 		phong_shader->Apply(*camera);
-		phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
 		phong_shader->Apply(lights);
 		phong_shader->Apply(transform);
+		phong_shader->SetUniformBool("use_cube_map", false);
 		nanosuit.Draw(*phong_shader);
 #pragma endregion
 
@@ -569,22 +579,24 @@ int main()
 
 			transform = Transform(light->position, glm::vec3(0.2f));
 			light_shaderProgram->Apply(transform);
+			light_shaderProgram->Apply(empty_material);
 
 			light_mesh.Draw(*light_shaderProgram);
 		}
 #pragma endregion
 
 #pragma region skybox
-		// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
-		// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
-		glDepthFunc(GL_LEQUAL);
-		skybox_shader->Use();
-		skybox_shader->SetUniformInt("cube_map", 0);
-		skybox_shader->Apply(*camera, true);
-		glActiveTexture(GL_TEXTURE0);
-		skybox_texture.Bind();
-		skybox_mesh.Draw(*skybox_shader);
-		glDepthFunc(GL_LESS);
+		if (active_skybox)
+		{
+			// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
+			// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
+			glDepthFunc(GL_LEQUAL);
+			skybox_shader->Use();
+			skybox_shader->Apply(*camera, true);
+			skybox_shader->Apply(skybox_material);
+			skybox_mesh.Draw(*skybox_shader);
+			glDepthFunc(GL_LESS);
+		}
 #pragma endregion
 
 #pragma region 带透明度的物体
@@ -592,12 +604,12 @@ int main()
 		std::vector<Object> objs(3);
 
 		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
-		objs.emplace(objs.end(), &grass_mesh, transform);
+		objs.emplace(objs.end(), &grass_mesh, transform, grass_material);
 
 		for (int i = 0; i < 2; i++)
 		{
 			transform = Transform(glm::vec3(0, 0, 4- i), glm::vec3(1.0f));
-			objs.emplace(objs.end(), &window_mesh, transform);
+			objs.emplace(objs.end(), &window_mesh, transform, window_material);
 		}
 
 		std::map<float, Object*> sorted;
@@ -612,6 +624,7 @@ int main()
 			blend_shader->Use();
 			blend_shader->Apply(*camera);
 			blend_shader->Apply(it->second->transform);
+			blend_shader->Apply(it->second->material);
 			it->second->Draw(*blend_shader);
 		}
 #pragma endregion

@@ -8,6 +8,7 @@
 #include "ShaderProgram.h"
 #include "IDrawable.h"
 #include "TextureCubeMap.h"
+#include "Material.h"
 
 class Vertex
 {
@@ -22,11 +23,8 @@ class Mesh : public IDrawable
 	public:
 		std::vector<Vertex> vertices;
 		std::vector<unsigned int> indices;
-		std::vector<Texture2D> textures;
-		TextureCubeMap* cube_map;
-		
 
-		Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture2D> _textures, TextureCubeMap* _cube_map=nullptr);
+		Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices);
 
 		void Draw(ShaderProgram& shader) override;
 

@@ -1,48 +1,23 @@
 #include "Mesh.h"
 #include <map>
 
-Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture2D> _textures, TextureCubeMap* _cube_map)
+
+Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices)
 {
 	vertices = _vertices;
 	indices = _indices;
-	textures = _textures;
-	cube_map = _cube_map;
 
 	SetupMesh();
 }
 
 void Mesh::Draw(ShaderProgram& shader)
 {
-	// 先解除其他纹理的绑定
-	for (int i = 0; i < 15; i++)
-	{
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-
-	shader.SetUniformBool("use_cube_map", cube_map != nullptr);
-	if (cube_map != nullptr)
-	{
-		shader.SetUniformInt("cube_map", 0);
-		glActiveTexture(GL_TEXTURE0);
-		cube_map->Bind();
-	}
-
-	// 绑定纹理
-	std::map<std::string, unsigned int> texture_count;
-	for (std::string texture_type : Texture2D::TextureTypes) texture_count[texture_type] = 0;
-
-	for (int i = 0; i < textures.size(); i++)
-	{
-		std::string &type = textures[i].type;
-		unsigned int idx = texture_count[type];
-		// 纹理命名规则：material.texture_{type}{idx}
-		shader.SetUniformInt("material." + type + std::to_string(idx), i + 1);
-		texture_count[type] = idx + 1;
-		// 在绑定之前激活相应的纹理单元
-		glActiveTexture(GL_TEXTURE0 + i + 1);
-		textures[i].Bind();
-	}
+	//// 先解除其他纹理的绑定
+	//for (int i = 0; i < 15; i++)
+	//{
+	//	glActiveTexture(GL_TEXTURE0 + i);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//}
 
 	
 

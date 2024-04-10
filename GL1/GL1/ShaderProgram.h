@@ -3,11 +3,14 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <map>
 
 #include "Shader.h"
 #include "Camera.h"
 #include "Light.h"
 #include "Transform.h"
+#include "Material.h"
+#include "Texture2D.h"
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -73,6 +76,16 @@ class ShaderProgram
 		/// </summary>
 		/// <param name="transform"></param>
 		void Apply(Transform& transform);
+		/// <summary>
+		/// 设置材质
+		/// </summary>
+		/// <param name="material"></param>
+		void Apply(Material& material);
+		/// <summary>
+		/// 设置一个用于环境映射的立方体贴图
+		/// </summary>
+		/// <param name="cube_map"></param>
+		void Apply(TextureCubeMap& cube_map);
 
 		void SetUniformBool(const std::string& name, bool value) const
 		{
