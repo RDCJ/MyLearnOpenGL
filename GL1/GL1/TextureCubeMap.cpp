@@ -9,7 +9,7 @@ TextureCubeMap::TextureCubeMap(std::vector<std::string>& img_paths)
 	{
 		std::cout << "Length of img_paths is not enough for cube map: " << img_paths.size() << std::endl;
 	}
-
+	stbi_set_flip_vertically_on_load(false);
 	int width, height, nrChannels;
 	// 因为立方体贴图包含有6个纹理，每个面一个，我们需要调用glTexImage2D函数6次
 	for (int i = 0; i < img_paths.size(); i++)
@@ -37,6 +37,11 @@ void TextureCubeMap::SetParameters()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+void TextureCubeMap::Bind()
+{
+	glBindTexture(GL_TEXTURE_CUBE_MAP, ID);
 }
 
 void TextureCubeMap::ToGL(int width, int height, int nChannel, unsigned char* img_data, int position)

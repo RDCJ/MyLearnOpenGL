@@ -159,6 +159,7 @@ int main()
 	ShaderProgram* outline_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/SingleColor.frag");
 	ShaderProgram* blend_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/blend_shader.frag");
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
+	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
@@ -466,6 +467,18 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
+
+#pragma region skybox
+		glDepthMask(GL_FALSE);
+		skybox_shader->Use();
+		skybox_shader->SetUniformInt("cube_map", 0);
+		skybox_shader->Apply(*camera, true);
+		glActiveTexture(GL_TEXTURE0);
+		skybox_texture.Bind();
+		skybox_mesh.Draw(*skybox_shader);
+		glDepthMask(GL_TRUE);
+#pragma endregion
+
 
 #pragma region box
 		for (int i = 0; i < 10; i++)

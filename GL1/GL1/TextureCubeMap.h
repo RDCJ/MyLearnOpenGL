@@ -13,6 +13,7 @@ class TextureCubeMap
 		unsigned int GetID() { return ID; }
 		TextureCubeMap(std::vector<std::string>& img_paths);
 		void SetParameters();
+		void Bind();
 
 	private:
 		unsigned int ID;

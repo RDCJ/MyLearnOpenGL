@@ -62,7 +62,7 @@ class ShaderProgram
 		/// uniform传值：viewPos，view，projection
 		/// </summary>
 		/// <param name="camera"></param>
-		void Apply(Camera& camera);
+		void Apply(Camera& camera, bool skybox=false);
 		/// <summary>
 		/// 设置光照
 		/// </summary>

@@ -32,11 +32,14 @@ bool ShaderProgram::CheckLinkSuccess()
 	return success;
 }
 
-void ShaderProgram::Apply(Camera& camera)
+void ShaderProgram::Apply(Camera& camera, bool skybox)
 {
 	// mvp
 	glm::mat4 view = camera.GetView();
 	glm::mat4 projection = camera.GetProjection();
+	if (skybox)
+		// 移除观察矩阵中的位移部分，让移动不会影响天空盒的位置向量
+		view = glm::mat4(glm::mat3(view));
 
 	this->SetUniformVec3("viewPos", camera.position);
 	this->SetUniformMat4f("view", view);
