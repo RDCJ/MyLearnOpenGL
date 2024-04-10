@@ -13,7 +13,7 @@ class Texture2D
 	public:
 		unsigned int GetID() { return ID; }
 		Texture2D() { type = ""; ID = 0; }
-		Texture2D(const char* image_path, std::string _type);
+		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true);
 		/// <summary>
 		/// 返回全局的纹理储存中的目标纹理，如果尚未加载就先从文件加载到全局储存中再返回
 		/// </summary>
@@ -21,7 +21,7 @@ class Texture2D
 		/// <param name="model_directory"></param>
 		/// <param name="_type"></param>
 		/// <returns></returns>
-		static Texture2D GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type);
+		static Texture2D GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical=true);
 		void SetParameters();
 		void GenerateMipmap();
 		/// <summary>

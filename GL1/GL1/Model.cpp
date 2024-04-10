@@ -110,7 +110,7 @@ std::vector<Texture2D> Model::LoadMaterialTextures(aiMaterial* material, aiTextu
 		// GetTexture获取每个纹理的文件位置, 它会将结果储存在一个aiString中
 		material->GetTexture(type, i, &str);
 		// 假设了模型文件中纹理文件的路径是相对于模型文件的本地(Local)路径
-		Texture2D texture = Texture2D::GetTexture2D(str.C_Str(), this->directory, typeName);
+		Texture2D texture = Texture2D::GetTexture2D(str.C_Str(), this->directory, typeName, false);
 
 		textures.push_back(texture);
 	}

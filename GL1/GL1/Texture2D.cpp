@@ -10,9 +10,9 @@ const std::vector<std::string> Texture2D::TextureTypes
 
 std::unordered_map<std::string, Texture2D> Texture2D::LoadedTextures;
 
-Texture2D::Texture2D(const char* image_path, std::string _type): type(_type)
+Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertical): type(_type)
 {
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(flip_vertical);
 	int width, height, nrChannels;
 	//读取图像文件，参数：文件路径，宽度、高度和颜色通道的个数
 	unsigned char* img_data = stbi_load(image_path, &width, &height, &nrChannels, 0);
@@ -29,7 +29,7 @@ Texture2D::Texture2D(const char* image_path, std::string _type): type(_type)
 	stbi_image_free(img_data);
 }
 
-Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type)
+Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical)
 {
 	std::string file_path = model_directory + "/" + std::string(file_name);
 
@@ -40,7 +40,7 @@ Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& mode
 	}
 	else
 	{
-		Texture2D texture(file_path.c_str(), _type);
+		Texture2D texture(file_path.c_str(), _type, flip_vertical);
 		Texture2D::LoadedTextures[file_path] = texture;
 		return Texture2D::LoadedTextures[file_path];
 	}
