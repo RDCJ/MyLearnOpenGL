@@ -166,7 +166,7 @@ int main()
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
 
-	Model nanosuit("./Model/nanosuit/nanosuit.obj");
+	Model nanosuit("./Model/nanosuit_reflection/nanosuit.obj");
 	for (int i = 0; i < nanosuit.materials.size(); i++)
 		nanosuit.materials[i].shininess = 0.4f * 128;
 
@@ -523,8 +523,7 @@ int main()
 			// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
 			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
 			phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
-
-			phong_shader->Apply(*skybox_material.cube_map);
+			phong_shader->SetUniformBool("use_cube_map", false);
 			phong_shader->Apply(cube_material);
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -558,13 +557,14 @@ int main()
 		
 #pragma region nanosuit
 
-		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.1f));
+		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.15f));
 
 		phong_shader->Use();
 		phong_shader->Apply(*camera);
 		phong_shader->Apply(lights);
 		phong_shader->Apply(transform);
-		phong_shader->SetUniformBool("use_cube_map", false);
+		phong_shader->Apply(*skybox_material.cube_map);
+		
 		nanosuit.Draw(*phong_shader);
 #pragma endregion
 
