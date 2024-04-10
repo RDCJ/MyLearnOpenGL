@@ -264,8 +264,8 @@ int main()
 	emission_map.GenerateMipmap();
 	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
 
-	Mesh cube_mesh(_vertices, _indices, _textures, &skybox_texture);
-	//Mesh cube_mesh(_vertices, _indices, std::vector<Texture2D>(), &skybox_texture);
+	//Mesh cube_mesh(_vertices, _indices, _textures, &skybox_texture);
+	Mesh cube_mesh(_vertices, _indices, std::vector<Texture2D>(), &skybox_texture);
 	Mesh light_mesh(_vertices, _indices, std::vector<Texture2D>());
 
 	glm::vec3 cubePositions[] = {
