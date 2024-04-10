@@ -175,6 +175,20 @@ int main()
 	};
 	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
 
+#pragma region skybox_texture
+	std::vector<std::string> skybox_img_paths{
+		"right.jpg",
+		"left.jpg",
+		"top.jpg",
+		"bottom.jpg",
+		"front.jpg",
+		"back.jpg"
+	};
+	for (int i = 0; i < skybox_img_paths.size(); i++)
+		skybox_img_paths[i] = "./Image/skybox/" + skybox_img_paths[i];
+	TextureCubeMap skybox_texture(skybox_img_paths);
+#pragma endregion
+
 #pragma region cube model
 	float vertices[] = {
 		// positions          // normals           // texture coords
@@ -250,7 +264,8 @@ int main()
 	emission_map.GenerateMipmap();
 	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
 
-	Mesh cube_mesh(_vertices, _indices, _textures);
+	Mesh cube_mesh(_vertices, _indices, _textures, &skybox_texture);
+	//Mesh cube_mesh(_vertices, _indices, std::vector<Texture2D>(), &skybox_texture);
 	Mesh light_mesh(_vertices, _indices, std::vector<Texture2D>());
 
 	glm::vec3 cubePositions[] = {
@@ -320,7 +335,7 @@ int main()
 		-1.0f, -1.0f,  1.0f,
 		 1.0f, -1.0f,  1.0f
 	};
-	
+
 	std::vector<Vertex> skybox_vertices;
 	for (int i = 0; i < 36; i++)
 	{
@@ -332,22 +347,7 @@ int main()
 	}
 
 	Mesh skybox_mesh(skybox_vertices, _indices, std::vector<Texture2D>());
-
-	std::vector<std::string> skybox_img_paths{
-		"right.jpg",
-		"left.jpg",
-		"top.jpg",
-		"bottom.jpg",
-		"front.jpg",
-		"back.jpg"
-	};
-	for (int i = 0; i < skybox_img_paths.size(); i++)
-		skybox_img_paths[i] = "./Image/skybox/" + skybox_img_paths[i];
-	TextureCubeMap skybox_texture(skybox_img_paths);
-
 #pragma endregion
-
-
 
 	Time::Init();
 
@@ -440,6 +440,8 @@ int main()
 #pragma endregion
 
 	bool use_frame_buffer = false;
+	bool use_box_outline = false;
+
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -474,22 +476,26 @@ int main()
 			// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
 			// 启用深度测试，需要开启GL_DEPTH_TEST
 			glEnable(GL_DEPTH_TEST);
-			// 启用模板测试
-			glEnable(GL_STENCIL_TEST);
-			// 设置测试通过或失败时的行为
-			// 第一个参数：模板测试失败时采取的行为, 
-			// 第二个参数：模板测试通过，但深度测试失败时采取的行为, 
-			// 第三个参数：模板测试和深度测试都通过时采取的行为
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			// 设置模板函数
-			// 第一个参数：设置模板测试函数(Stencil Test Function)。这个测试函数将会应用到已储存的模板值上和glStencilFunc函数的ref值上。
-			//		可用的选项有：GL_NEVER、GL_LESS、GL_LEQUAL、GL_GREATER、GL_GEQUAL、GL_EQUAL、GL_NOTEQUAL和GL_ALWAYS
-			// 第二个参数：设置了模板测试的参考值。模板缓冲的内容将会与这个值进行比较
-			// 第三个参数：设置一个掩码，它将会与参考值和储存的模板值在测试比较它们之前进行与(AND)运算。初始情况下所有位都为1
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
-			// 设置模板缓冲更新前的掩码，它会与将要写入缓冲的模板值进行与(AND)运算
-			glStencilMask(0xFF);
 
+			if (use_box_outline)
+			{
+				// 启用模板测试
+				glEnable(GL_STENCIL_TEST);
+				// 设置测试通过或失败时的行为
+				// 第一个参数：模板测试失败时采取的行为, 
+				// 第二个参数：模板测试通过，但深度测试失败时采取的行为, 
+				// 第三个参数：模板测试和深度测试都通过时采取的行为
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				// 设置模板函数
+				// 第一个参数：设置模板测试函数(Stencil Test Function)。这个测试函数将会应用到已储存的模板值上和glStencilFunc函数的ref值上。
+				//		可用的选项有：GL_NEVER、GL_LESS、GL_LEQUAL、GL_GREATER、GL_GEQUAL、GL_EQUAL、GL_NOTEQUAL和GL_ALWAYS
+				// 第二个参数：设置了模板测试的参考值。模板缓冲的内容将会与这个值进行比较
+				// 第三个参数：设置一个掩码，它将会与参考值和储存的模板值在测试比较它们之前进行与(AND)运算。初始情况下所有位都为1
+				glStencilFunc(GL_ALWAYS, 1, 0xFF);
+				// 设置模板缓冲更新前的掩码，它会与将要写入缓冲的模板值进行与(AND)运算
+				glStencilMask(0xFF);
+			}
+			
 			glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
 			model = glm::translate(model, cubePositions[i]);
 
@@ -513,26 +519,29 @@ int main()
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
 			cube_mesh.Draw(*phong_shader);
 
-			// 使用GL_ALWAYS模板测试函数，我们保证了片段永远会通过模板测试，在绘制片段的地方，模板缓冲会被更新为参考值1
-			// 模板函数设置为GL_NOTEQUAL：当前模板缓冲值不为1的片元才能通过模板测试
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-			// 将掩码值设为0， 禁止模板缓冲更新
-			glStencilMask(0x00);
-			//glDisable(GL_DEPTH_TEST);
+			if (use_box_outline)
+			{
+				// 使用GL_ALWAYS模板测试函数，我们保证了片段永远会通过模板测试，在绘制片段的地方，模板缓冲会被更新为参考值1
+				// 模板函数设置为GL_NOTEQUAL：当前模板缓冲值不为1的片元才能通过模板测试
+				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+				// 将掩码值设为0， 禁止模板缓冲更新
+				glStencilMask(0x00);
+				glDisable(GL_DEPTH_TEST);
 
-			model = glm::scale(model, glm::vec3(1.05));
-			outline_shader->Use();
-			outline_shader->SetUniformMat4f("model", model);
-			outline_shader->Apply(*camera);
-			outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
-			cube_mesh.Draw(*outline_shader);
+				model = glm::scale(model, glm::vec3(1.05));
+				outline_shader->Use();
+				outline_shader->SetUniformMat4f("model", model);
+				outline_shader->Apply(*camera);
+				outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
+				cube_mesh.Draw(*outline_shader);
 
-			// glStencilMask(0x00)不仅会阻止模板缓冲的写入，也会阻止其清空(glClear(stencil_buffer)无效)
-			// 因此需要重设为0xFF
-			glStencilMask(0xFF);
-			glEnable(GL_DEPTH_TEST);
-			// 关闭模板测试
-			glDisable(GL_STENCIL_TEST);
+				// glStencilMask(0x00)不仅会阻止模板缓冲的写入，也会阻止其清空(glClear(stencil_buffer)无效)
+				// 因此需要重设为0xFF
+				glStencilMask(0xFF);
+				glEnable(GL_DEPTH_TEST);
+				// 关闭模板测试
+				glDisable(GL_STENCIL_TEST);
+			}
 		}
 #pragma endregion
 		

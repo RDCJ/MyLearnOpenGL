@@ -46,6 +46,9 @@ uniform int light_num;
 uniform vec3 viewPos;
 uniform Material material;
 
+uniform int use_cube_map;
+uniform samplerCube cube_map;
+
 #define LIGHT_MAX_NUM 6
 uniform Light lights[LIGHT_MAX_NUM];
 
@@ -103,11 +106,19 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     return attenuation * (ambient + spot_intensity * (diffuse + specular));// + emission;
 }
 
+vec3 CalcEnvironmentReflection(vec3 normal, vec3 viewDir)
+{
+    // 计算由观察方向(摄像机->片段)关于法线的反射方向
+    vec3 reflectDir = reflect(viewDir, normal);
+    // 用反射方向在立方体贴图上采样
+    return vec3(texture(cube_map, reflectDir));
+}
+
 void main()
 {   
     // 法线标准化
     vec3 norm = normalize(Normal);
-    // 观察方向
+    // 观察方向(片段->摄像机)
     vec3 viewDir = normalize(viewPos - FragPos);
 
     vec3 result = vec3(0);
@@ -115,5 +126,8 @@ void main()
     for (int i=0; i<light_num; i++)
         result += CalcLight(lights[i], norm, viewDir);
     
+    if (use_cube_map == 1)
+        result += CalcEnvironmentReflection(norm, -viewDir);
+
     FragColor = vec4(result, 1.0f);
 } 

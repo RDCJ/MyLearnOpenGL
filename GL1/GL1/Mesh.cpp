@@ -1,17 +1,25 @@
 #include "Mesh.h"
 #include <map>
 
-Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture2D> _textures)
+Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture2D> _textures, TextureCubeMap* _cube_map)
 {
 	vertices = _vertices;
 	indices = _indices;
 	textures = _textures;
+	cube_map = _cube_map;
 
 	SetupMesh();
 }
 
 void Mesh::Draw(ShaderProgram& shader)
 {
+	// 先解除其他纹理的绑定
+	for (int i = 0; i < 10; i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
 	// 绑定纹理
 	std::map<std::string, unsigned int> texture_count;
 	for (std::string texture_type : Texture2D::TextureTypes) texture_count[texture_type] = 0;
@@ -28,6 +36,14 @@ void Mesh::Draw(ShaderProgram& shader)
 		// 在绑定之前激活相应的纹理单元
 		glActiveTexture(GL_TEXTURE0 + i);
 		textures[i].Bind();
+	}
+
+	shader.SetUniformBool("use_cube_map", cube_map != nullptr);
+	if (cube_map != nullptr)
+	{
+		shader.SetUniformInt("cube_map", textures.size());
+		glActiveTexture(GL_TEXTURE0 + textures.size());
+		cube_map->Bind();
 	}
 
 	// 绘制mesh
