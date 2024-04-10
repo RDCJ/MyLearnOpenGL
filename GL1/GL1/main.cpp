@@ -468,18 +468,6 @@ int main()
 		//spot_light->position = camera->position;
 		//spot_light->direction = camera->Front;
 
-#pragma region skybox
-		glDepthMask(GL_FALSE);
-		skybox_shader->Use();
-		skybox_shader->SetUniformInt("cube_map", 0);
-		skybox_shader->Apply(*camera, true);
-		glActiveTexture(GL_TEXTURE0);
-		skybox_texture.Bind();
-		skybox_mesh.Draw(*skybox_shader);
-		glDepthMask(GL_TRUE);
-#pragma endregion
-
-
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
@@ -575,6 +563,19 @@ int main()
 
 			light_mesh.Draw(*light_shaderProgram);
 		}
+#pragma endregion
+
+#pragma region skybox
+		// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
+		// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
+		glDepthFunc(GL_LEQUAL);
+		skybox_shader->Use();
+		skybox_shader->SetUniformInt("cube_map", 0);
+		skybox_shader->Apply(*camera, true);
+		glActiveTexture(GL_TEXTURE0);
+		skybox_texture.Bind();
+		skybox_mesh.Draw(*skybox_shader);
+		glDepthFunc(GL_LESS);
 #pragma endregion
 
 #pragma region 带透明度的物体
