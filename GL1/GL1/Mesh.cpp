@@ -38,9 +38,7 @@ void Mesh::Draw(ShaderProgram& shader)
 		unsigned int idx = texture_count[type];
 		// 纹理命名规则：material.texture_{type}{idx}
 		shader.SetUniformInt("material." + type + std::to_string(idx), i + 1);
-
 		texture_count[type] = idx + 1;
-
 		// 在绑定之前激活相应的纹理单元
 		glActiveTexture(GL_TEXTURE0 + i + 1);
 		textures[i].Bind();

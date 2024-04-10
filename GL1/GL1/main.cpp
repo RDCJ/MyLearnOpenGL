@@ -506,6 +506,7 @@ int main()
 			phong_shader->SetUniformMat4f("model", model);
 			phong_shader->Apply(*camera);
 			phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
+			phong_shader->SetUniformFloat("material.refract_ratio", 1.0 / 1.52);
 			phong_shader->Apply(lights);
 
 			// 计算法线矩阵，用于把法向量转换为世界空间坐标
@@ -554,7 +555,6 @@ int main()
 		phong_shader->SetUniformFloat("material.shininess", 0.4f * 128);
 		phong_shader->Apply(lights);
 		phong_shader->Apply(transform);
-
 		nanosuit.Draw(*phong_shader);
 #pragma endregion
 

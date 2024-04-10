@@ -16,6 +16,8 @@ struct Material
     sampler2D texture_emission2;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
+
+    float refract_ratio;
 };
 
 struct Light
@@ -48,6 +50,7 @@ uniform Material material;
 
 uniform int use_cube_map;
 uniform samplerCube cube_map;
+uniform float refract_ratio;
 
 #define LIGHT_MAX_NUM 6
 uniform Light lights[LIGHT_MAX_NUM];
@@ -106,12 +109,18 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     return attenuation * (ambient + spot_intensity * (diffuse + specular));// + emission;
 }
 
-vec3 CalcEnvironmentReflection(vec3 normal, vec3 viewDir)
+vec4 CalcEnvironmentReflection(vec3 normal, vec3 viewDir)
 {
     // 计算由观察方向(摄像机->片段)关于法线的反射方向
     vec3 reflectDir = reflect(viewDir, normal);
     // 用反射方向在立方体贴图上采样
-    return vec3(texture(cube_map, reflectDir));
+    return texture(cube_map, reflectDir);
+}
+
+vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
+{
+    vec3 refractDir = refract(viewDir, normal, material.refract_ratio);
+    return texture(cube_map, refractDir);
 }
 
 void main()
@@ -127,7 +136,9 @@ void main()
         result += CalcLight(lights[i], norm, viewDir);
     
     if (use_cube_map == 1)
-        result += CalcEnvironmentReflection(norm, -viewDir);
-
+    {
+        //result += vec3(CalcEnvironmentReflection(norm, -viewDir));
+        result += vec3(CalcEnvironmentRefraction(norm, -viewDir));
+    }
     FragColor = vec4(result, 1.0f);
 } 
