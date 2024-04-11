@@ -1,7 +1,4 @@
 #pragma once
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <map>
 
@@ -10,7 +7,7 @@
 #include "Light.h"
 #include "Transform.h"
 #include "Material.h"
-#include "Texture2D.h"
+#include <GLFW/glfw3.h>
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -65,7 +62,7 @@ class ShaderProgram
 		/// uniform传值：viewPos，view，projection
 		/// </summary>
 		/// <param name="camera"></param>
-		void Apply(Camera& camera, bool skybox=false);
+		void Apply(Camera& camera, bool use_uniform_matrices=false, bool skybox=false);
 		/// <summary>
 		/// 设置光照
 		/// </summary>
@@ -86,6 +83,11 @@ class ShaderProgram
 		/// </summary>
 		/// <param name="cube_map"></param>
 		void Apply(TextureCubeMap& cube_map);
+		/// <summary>
+		/// 设置uniform块的绑定点
+		/// </summary>
+		/// <param name="uniform_buffer"></param>
+		void Apply(UniformBuffer& uniform_buffer);
 
 		void SetUniformBool(const std::string& name, bool value) const
 		{

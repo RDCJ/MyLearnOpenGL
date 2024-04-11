@@ -6,25 +6,14 @@
 #include <vector>
 #include <map>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "ShaderProgram.h"
-#include "stb_image.h"
-#include "Shader.h"
-#include "Texture2D.h"
-#include "Camera.h"
 #include "Time.h"
-#include "Light.h"
-#include "Mesh.h"
 #include "Model.h"
-#include "Transform.h"
 #include "Object.h"
-#include "TextureCubeMap.h"
-#include "Material.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -165,6 +154,8 @@ int main()
 	Material empty_material;
 
 	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
+	// 给camera创建一个uniform缓冲对象
+	camera->uniform_matrices.GenBuffer(2 * sizeof(glm::mat4), 0);
 
 	Model nanosuit("./Model/nanosuit_reflection/nanosuit.obj");
 	for (int i = 0; i < nanosuit.materials.size(); i++)
@@ -460,6 +451,7 @@ int main()
 
 		ProcessInput(window);
 		camera->Update();
+		camera->FillUniformMatrices();
 
 		if (use_frame_buffer)
 		{
@@ -513,8 +505,7 @@ int main()
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 			phong_shader->Use();
 			phong_shader->SetUniformMat4f("model", model);
-			phong_shader->Apply(*camera);
-			
+			phong_shader->Apply(*camera, true);
 			phong_shader->Apply(lights);
 
 			// 计算法线矩阵，用于把法向量转换为世界空间坐标
@@ -541,7 +532,7 @@ int main()
 				model = glm::scale(model, glm::vec3(1.05));
 				outline_shader->Use();
 				outline_shader->SetUniformMat4f("model", model);
-				outline_shader->Apply(*camera);
+				outline_shader->Apply(*camera, true);
 				outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
 				cube_mesh.Draw(*outline_shader);
 
@@ -560,7 +551,7 @@ int main()
 		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.15f));
 
 		phong_shader->Use();
-		phong_shader->Apply(*camera);
+		phong_shader->Apply(*camera, true);
 		phong_shader->Apply(lights);
 		phong_shader->Apply(transform);
 		phong_shader->Apply(*skybox_material.cube_map);
@@ -574,7 +565,7 @@ int main()
 			Light* light = lights[i];
 
 			light_shaderProgram->Use();
-			light_shaderProgram->Apply(*camera);
+			light_shaderProgram->Apply(*camera, true);
 			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
 
 			transform = Transform(light->position, glm::vec3(0.2f));
@@ -592,7 +583,7 @@ int main()
 			// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
 			glDepthFunc(GL_LEQUAL);
 			skybox_shader->Use();
-			skybox_shader->Apply(*camera, true);
+			skybox_shader->Apply(*camera, false, true);
 			skybox_shader->Apply(skybox_material);
 			skybox_mesh.Draw(*skybox_shader);
 			glDepthFunc(GL_LESS);
@@ -622,7 +613,7 @@ int main()
 		for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
 		{
 			blend_shader->Use();
-			blend_shader->Apply(*camera);
+			blend_shader->Apply(*camera, true);
 			blend_shader->Apply(it->second->transform);
 			blend_shader->Apply(it->second->material);
 			it->second->Draw(*blend_shader);

@@ -32,18 +32,23 @@ bool ShaderProgram::CheckLinkSuccess()
 	return success;
 }
 
-void ShaderProgram::Apply(Camera& camera, bool skybox)
+void ShaderProgram::Apply(Camera& camera, bool use_uniform_matrices, bool skybox)
 {
-	// mvp
-	glm::mat4 view = camera.GetView();
-	glm::mat4 projection = camera.GetProjection();
-	if (skybox)
-		// 移除观察矩阵中的位移部分，让移动不会影响天空盒的位置向量
-		view = glm::mat4(glm::mat3(view));
-
 	this->SetUniformVec3("viewPos", camera.position);
-	this->SetUniformMat4f("view", view);
-	this->SetUniformMat4f("projection", projection);
+	if (use_uniform_matrices)
+		this->Apply(camera.uniform_matrices);
+	else
+	{
+		// mvp
+		glm::mat4 view = camera.GetView();
+		glm::mat4 projection = camera.GetProjection();
+		if (skybox)
+			// 移除观察矩阵中的位移部分，让移动不会影响天空盒的位置向量
+			view = glm::mat4(glm::mat3(view));
+
+		this->SetUniformMat4f("view", view);
+		this->SetUniformMat4f("projection", projection);
+	}
 }
 
 void ShaderProgram::Apply(std::vector<Light*>& lights)
@@ -91,6 +96,16 @@ void ShaderProgram::Apply(TextureCubeMap& cube_map)
 	this->SetUniformInt("cube_map", 0);
 	glActiveTexture(GL_TEXTURE0);
 	cube_map.Bind();
+}
+
+void ShaderProgram::Apply(UniformBuffer& uniform_buffer)
+{
+	// glGetUniformBlockIndex获取Uniform块索引 (Uniform Block Index, 着色器中已定义Uniform块的位置值索引)
+	// 它接受一个程序对象和Uniform块的名称
+	unsigned int uniform_block_index = glGetUniformBlockIndex(this->ID, uniform_buffer.buffer_name.c_str());
+	// glUniformBlockBinding将Uniform块绑定到一个特定的绑定点中
+	// 参数: 程序对象, Uniform块索引, 链接到的绑定点
+	glUniformBlockBinding(this->ID, uniform_block_index, uniform_buffer.binding_point);
 }
 
 void ShaderProgram::Apply(Material& material)

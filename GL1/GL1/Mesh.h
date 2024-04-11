@@ -4,11 +4,9 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-#include "Texture2D.h"
 #include "ShaderProgram.h"
 #include "IDrawable.h"
 #include "TextureCubeMap.h"
-#include "Material.h"
 
 class Vertex
 {

@@ -10,8 +10,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "Texture2D.h"
-#include "ShaderProgram.h"
 #include "Mesh.h"
 #include "Utils.h"
 

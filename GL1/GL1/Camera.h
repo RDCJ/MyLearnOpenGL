@@ -1,10 +1,12 @@
 #pragma once
 #ifndef CAMERA_H
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <cmath>
-#include <GLFW/glfw3.h>
 #include <iostream>
+#include "UniformBuffer.h"
 #include "Time.h"
 #include "Utils.h"
 
@@ -93,6 +95,12 @@ class Camera
 		/// </summary>
 		/// <param name="direction"></param>
 		void UpdateFront(glm::vec3& direction);
+		/// <summary>
+		/// 将view和projection填充到Uniform缓冲对象中
+		/// </summary>
+		void FillUniformMatrices();
+
+		UniformBuffer uniform_matrices;
 
 	private:
 		

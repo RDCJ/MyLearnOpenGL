@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <glm/gtc/type_ptr.hpp>
 
 Camera::Camera(GLFWwindow* _window, float _FOV, float _AspectRatio, float _zNear, float _zFar): 
 	FOV(_FOV), AspectRatio(_AspectRatio), window(_window), Z_Near(_zNear), Z_Far(_zFar)
@@ -10,6 +11,8 @@ Camera::Camera(GLFWwindow* _window, float _FOV, float _AspectRatio, float _zNear
 	glm::vec3 front = target - position;
 
 	UpdateFront(front);
+
+	uniform_matrices = UniformBuffer("Matrices", 0);
 }
 
 glm::mat4 Camera::GetView()
@@ -110,4 +113,17 @@ inline void Camera::UpdateFront(glm::vec3& direction)
 
 	Right = glm::normalize(glm::cross(Front, glm::vec3(0, 1, 0)));
 	Up = glm::cross(Right, Front);
+}
+
+void Camera::FillUniformMatrices()
+{
+	uniform_matrices.Bind();
+	auto projection = GetProjection();
+	auto view = GetView();
+	// glBufferSubData向Uniform缓冲中添加数据
+	// 参数：目标，偏移量，大小，数据
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
