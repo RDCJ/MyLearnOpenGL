@@ -17,6 +17,15 @@ out vec2 TexCoord_;
 out vec3 FragPos_;
 out vec3 Normal_;
 
+// 使用的是一个std140布局的Uniform块
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
+
+uniform mat4 model;
+
 uniform float explode_length;
 
 // 计算三角形的法向量
@@ -24,7 +33,7 @@ vec3 GetNormal()
 {
    vec3 a = vec3(gl_in[0].gl_Position) - vec3(gl_in[1].gl_Position);
    vec3 b = vec3(gl_in[2].gl_Position) - vec3(gl_in[1].gl_Position);
-   return normalize(cross(a, b));
+   return normalize(cross(b, a));
 }
 
 // 让位置向量沿着法线向量进行位移
@@ -37,26 +46,16 @@ void main()
 {
     vec3 normal = GetNormal();
 
-    // 
-    gl_Position = Explode(gl_in[0].gl_Position, normal);
-    TexCoord_ = TexCoord[0];
-    FragPos_ = FragPos[0];
-    Normal_ = Normal[0];
-    EmitVertex();
-    // 每次我们调用EmitVertex时，gl_Position中的向量会被添加到图元中来
-
-    gl_Position = Explode(gl_in[1].gl_Position, normal);
-    TexCoord_ = TexCoord[1];
-    FragPos_ = FragPos[1];
-    Normal_ = Normal[1];
-    EmitVertex();
-
-    gl_Position = Explode(gl_in[2].gl_Position, normal);
-    TexCoord_ = TexCoord[2];
-    FragPos_ = FragPos[2];
-    Normal_ = Normal[2];
-    EmitVertex();
-
+    for (int i=0; i<3; i++)
+    {
+        gl_Position = projection * view * model * Explode(gl_in[i].gl_Position, normal);
+        TexCoord_ = TexCoord[i];
+        FragPos_ = FragPos[i];
+        Normal_ = Normal[i];
+        EmitVertex();
+        // 每次我们调用EmitVertex时，gl_Position中的向量会被添加到图元中来
+    }
+    
     // 当EndPrimitive被调用时，所有发射出的(Emitted)顶点都会合成为指定的输出渲染图元
     // 在一个或多个EmitVertex调用之后重复调用EndPrimitive能够生成多个图元
     EndPrimitive();

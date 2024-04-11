@@ -150,7 +150,7 @@ int main()
 	ShaderProgram* blend_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/blend_shader.frag");
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
-	ShaderProgram* explode_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
+	ShaderProgram* explode_shader = new ShaderProgram("./Shader/explode.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
 
 	Material empty_material;
@@ -443,7 +443,7 @@ int main()
 	bool use_frame_buffer = false;
 	bool use_box_outline = false;
 	bool active_skybox = true;
-	bool use_explode = false;
+	bool use_explode = true;
 	bool draw_normal = true;
 
 	std::cout << "¿ªÊ¼äÖÈ¾" << std::endl;
@@ -561,7 +561,7 @@ int main()
 			explode_shader->Apply(lights);
 			explode_shader->Apply(transform);
 			explode_shader->Apply(*skybox_material.cube_map);
-			explode_shader->SetUniformFloat("explode_length", 0.2);
+			explode_shader->SetUniformFloat("explode_length", std::sin(glfwGetTime()) + 1);
 			nanosuit.Draw(*explode_shader);
 		}
 		else
