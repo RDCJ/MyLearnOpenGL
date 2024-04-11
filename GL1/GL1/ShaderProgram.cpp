@@ -18,6 +18,27 @@ ShaderProgram::ShaderProgram(const char* vert_source_path, const char* frag_sour
 	}
 }
 
+ShaderProgram::ShaderProgram(const char* vert_source_path, const char* geometry_source_path, const char* frag_source_path)
+{
+	ID = glCreateProgram();
+	Shader vertex_shader = Shader(vert_source_path, ShaderType::VertexShader);
+	Shader geometry_shader = Shader(geometry_source_path, ShaderType::GeometryShader);
+	Shader frag_shader = Shader(frag_source_path, ShaderType::FragmentShader);
+
+	bool f1 = vertex_shader.CheckCompileSuccess();
+	bool f2 = geometry_shader.CheckCompileSuccess();
+	bool f3 = frag_shader.CheckCompileSuccess();
+
+	if (f1 && f2 && f3)
+	{
+		AttachShader(vertex_shader);
+		AttachShader(geometry_shader);
+		AttachShader(frag_shader);
+		Link();
+		CheckLinkSuccess();
+	}
+}
+
 bool ShaderProgram::CheckLinkSuccess()
 {
 	int success;

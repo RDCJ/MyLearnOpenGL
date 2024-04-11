@@ -11,6 +11,7 @@
 enum ShaderType
 {
 	VertexShader,
+	GeometryShader,
 	FragmentShader
 };
 

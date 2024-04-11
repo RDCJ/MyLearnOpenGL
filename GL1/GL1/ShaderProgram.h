@@ -26,6 +26,8 @@ class ShaderProgram
 
 		ShaderProgram(const char* vert_source_path, const char* frag_source_path);
 
+		ShaderProgram(const char* vert_source_path, const char* geometry_source_path, const char* frag_source_path);
+
 		~ShaderProgram()
 		{
 			glDeleteProgram(ID);

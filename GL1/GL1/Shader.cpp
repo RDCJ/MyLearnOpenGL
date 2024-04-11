@@ -38,12 +38,15 @@ void Shader::Compile(const char** shader_source)
 	// 创建一个着色器对象，注意是用ID来引用的
 	switch (shaderType)
 	{
-	case ShaderType::VertexShader:
-		ID = glCreateShader(GL_VERTEX_SHADER);
-		break;
-	case ShaderType::FragmentShader:
-		ID = glCreateShader(GL_FRAGMENT_SHADER);
-		break;
+		case ShaderType::VertexShader:
+			ID = glCreateShader(GL_VERTEX_SHADER);
+			break;
+		case ShaderType::GeometryShader:
+			ID = glCreateShader(GL_GEOMETRY_SHADER);
+			break;
+		case ShaderType::FragmentShader:
+			ID = glCreateShader(GL_FRAGMENT_SHADER);
+			break;
 	}
 	// 把着色器源码附加到着色器对象上，然后编译它
 	glShaderSource(ID, 1, shader_source, NULL);
