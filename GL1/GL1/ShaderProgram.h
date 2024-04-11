@@ -91,6 +91,7 @@ class ShaderProgram
 		/// <param name="uniform_buffer"></param>
 		void Apply(UniformBuffer& uniform_buffer);
 
+#pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
 		{
 			glUniform1i(GetUniformLocation(name.c_str()), (int)value);
@@ -114,7 +115,7 @@ class ShaderProgram
 			glUniformMatrix3fv(GetUniformLocation(name.c_str()), 1, (int)transpose, glm::value_ptr(mat));
 		}
 
-		void SetUniformMat4f(const std::string& name, glm::mat4& mat, bool transpose=false) const
+		void SetUniformMat4f(const std::string& name, glm::mat4& mat, bool transpose = false) const
 		{
 			//第二个参数告诉OpenGL我们将要发送多少个矩阵。
 			// 第三个参数表示是否对矩阵进行转置(Transpose)。OpenGL通常使用列主序(Column-major Ordering)布局。GLM的默认布局就是列主序，所以通常并不需要转置矩阵。
@@ -131,6 +132,7 @@ class ShaderProgram
 		{
 			glUniform3f(GetUniformLocation(name.c_str()), x, y, z);
 		}
+#pragma endregion
 
 		int GetUniformLocation(const char* name) const
 		{
