@@ -151,6 +151,7 @@ int main()
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 	ShaderProgram* explode_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
+	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
 
 	Material empty_material;
 
@@ -442,7 +443,8 @@ int main()
 	bool use_frame_buffer = false;
 	bool use_box_outline = false;
 	bool active_skybox = true;
-	bool use_explode = true;
+	bool use_explode = false;
+	bool draw_normal = true;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -571,6 +573,16 @@ int main()
 			phong_shader->Apply(*skybox_material.cube_map);
 
 			nanosuit.Draw(*phong_shader);
+
+			if (draw_normal)
+			{
+				draw_normal_shader->Use();
+				draw_normal_shader->Apply(*camera, true);
+				draw_normal_shader->Apply(transform);
+				draw_normal_shader->SetUniformFloat("normal_length", 0.05);
+				draw_normal_shader->SetUniformVec3("color", 1.0f, 1.0f, 0);
+				nanosuit.Draw(*draw_normal_shader);
+			}
 		}
 #pragma endregion
 
