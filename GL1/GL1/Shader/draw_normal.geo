@@ -12,15 +12,16 @@ layout (std140) uniform Matrices
 
 in vec3 Normal[];
 
+uniform mat4 model;
 uniform float normal_length;
 
 void main()
 {
     for (int i=0; i<3; i++)
     {
-        gl_Position = projection * gl_in[i].gl_Position;
+        gl_Position = projection * view * model * gl_in[i].gl_Position;
         EmitVertex();
-        gl_Position = projection * (gl_in[i].gl_Position + normal_length * vec4(Normal[i], 0.0));
+        gl_Position = projection * view * model * (gl_in[i].gl_Position + normal_length * vec4(Normal[i], 0.0));
         EmitVertex();
 
         EndPrimitive();

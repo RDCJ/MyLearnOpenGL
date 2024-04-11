@@ -443,7 +443,7 @@ int main()
 	bool use_frame_buffer = false;
 	bool use_box_outline = false;
 	bool active_skybox = true;
-	bool use_explode = true;
+	bool use_explode = false;
 	bool draw_normal = true;
 
 	std::cout << "¿ªÊ¼äÖÈ¾" << std::endl;
@@ -579,7 +579,7 @@ int main()
 				draw_normal_shader->Use();
 				draw_normal_shader->Apply(*camera, true);
 				draw_normal_shader->Apply(transform);
-				draw_normal_shader->SetUniformFloat("normal_length", 0.05);
+				draw_normal_shader->SetUniformFloat("normal_length", 0.1);
 				draw_normal_shader->SetUniformVec3("color", 1.0f, 1.0f, 0);
 				nanosuit.Draw(*draw_normal_shader);
 			}
