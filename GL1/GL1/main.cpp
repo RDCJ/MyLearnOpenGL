@@ -148,15 +148,15 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* light_shaderProgram = new ShaderProgram("./Shader/LightVert.vert", "./Shader/LightFrag.frag");
-	ShaderProgram* phong_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* phong_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/Blinn_Phong.frag");
 	ShaderProgram* outline_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/SingleColor.frag");
 	ShaderProgram* blend_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/blend_shader.frag");
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 	ShaderProgram* explode_shader = new ShaderProgram("./Shader/explode.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
-	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/phong_shader.frag");
-	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/Blinn_Phong.frag");
+	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/Blinn_Phong.frag");
 
 	Material empty_material;
 
@@ -528,7 +528,7 @@ int main()
 	bool use_explode = false;
 	bool draw_normal = false;
 	bool rock_move = true;
-	
+	bool use_blinn = true;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -593,6 +593,7 @@ int main()
 			phong_shader->Apply(*camera, true);
 			phong_shader->Apply(lights);
 			phong_shader->SetUniformBool("use_cube_map", false);
+			phong_shader->SetUniformBool("use_blinn", use_blinn);
 			phong_shader->Apply(cube_material);
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -629,6 +630,7 @@ int main()
 		phong_instance_shader->Apply(*camera, true);
 		phong_instance_shader->Apply(lights);
 		phong_instance_shader->SetUniformBool("use_cube_map", false);
+		phong_instance_shader->SetUniformBool("use_blinn", use_blinn);
 		phong_instance_shader->Apply(cube_material);
 
 		for (int i = 1; i < box_instance_num; i++)
@@ -662,7 +664,7 @@ int main()
 			phong_shader->Apply(lights);
 			phong_shader->Apply(transform);
 			phong_shader->Apply(*skybox_material.cube_map);
-
+			phong_shader->SetUniformBool("use_blinn", use_blinn);
 			nanosuit.Draw(*phong_shader);
 
 			if (draw_normal)
@@ -700,6 +702,7 @@ int main()
 		phong_shader->Apply(lights);
 		phong_shader->Apply(planet_tf);
 		phong_shader->SetUniformBool("use_cube_map", false);
+		phong_shader->SetUniformBool("use_blinn", use_blinn);
 		planet.Draw(*phong_shader);
 
 		if (rock_move)
@@ -724,6 +727,7 @@ int main()
 			phong_instance_array_shader->Apply(*camera, true);
 			phong_instance_array_shader->Apply(lights);
 			phong_instance_array_shader->SetUniformBool("use_cube_map", false);
+			phong_instance_array_shader->SetUniformBool("use_blinn", use_blinn);
 			rock.DrawInstance(*phong_instance_array_shader, rock_num);
 		}
 		else

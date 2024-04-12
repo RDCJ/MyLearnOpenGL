@@ -46,6 +46,7 @@ in vec2 TexCoord;
 
 out vec4 FragColor;
 
+uniform int use_blinn;
 uniform int light_num;
 uniform vec3 viewPos;
 uniform Material material;
@@ -98,12 +99,22 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     vec3 diffuse = diffuse_param * light.diffuse * vec3(texture(material.texture_diffuse0, TexCoord));
 
     // 镜面光照：当观察方向与反射方向接近时，可以看到高光
-    
-    // 先用法向量翻折入射光的方向来计算反射向量。
-    // reflect函数要求第一个向量是从光源指向片段位置的向量
-    vec3 reflectDir = reflect(-lightDir, normal);
-    // 然后计算反射向量与观察方向的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
-    float specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
+    float specular_param = 0;
+    if (use_blinn > 0)
+    {
+        // 计算半程向量
+        vec3 halfwayDir = normalize(lightDir + viewDir);
+        // 然后计算半程向量与法向量的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
+        specular_param = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    }
+    else
+    {
+        // 先用法向量翻折入射光的方向来计算反射向量。
+        // reflect函数要求第一个向量是从光源指向片段位置的向量
+        vec3 reflectDir = reflect(-lightDir, normal);
+        // 然后计算反射向量与观察方向的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
+        specular_param = pow(max(dot(reflectDir, viewDir), 0.0), material.shininess);
+    }
     vec3 specular = specular_param * light.specular * vec3(texture(material.texture_specular0, TexCoord));
 
     //vec3 emission = vec3(texture(material.emission, TexCoord));
