@@ -9,6 +9,15 @@ void Model::Draw(ShaderProgram& shader)
 	}
 }
 
+void Model::DrawInstance(ShaderProgram& shader, int num)
+{
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		shader.Apply(materials[i]);
+		meshes[i].DrawInstance(shader, num);
+	}
+}
+
 void Model::LoadModel(std::string path)
 {
 	Assimp::Importer importer;

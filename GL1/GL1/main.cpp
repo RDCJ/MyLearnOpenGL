@@ -84,14 +84,14 @@ void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 static std::vector<Light*> CreateLight()
 {
 	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(1.0f,  0.2f,  2.0f),
 		glm::vec3(2.3f, -3.3f, -4.0f),
 		glm::vec3(-4.0f,  2.0f, -12.0f),
 		glm::vec3(0.0f,  0.0f, -3.0f)
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
 		lights.push_back(light);
@@ -109,7 +109,7 @@ static std::vector<Light*> CreateLight()
 		light->diffuse = glm::vec3(1);
 		light->specular = glm::vec3(1);
 	}
-
+	directional_light->diffuse = glm::vec3(0.5);
 	return lights;
 	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
 }
@@ -153,6 +153,7 @@ int main()
 	ShaderProgram* explode_shader = new ShaderProgram("./Shader/explode.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
 	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/phong_shader.frag");
 
 	Material empty_material;
 
@@ -364,10 +365,71 @@ int main()
 	}
 #pragma endregion
 
+#pragma region planet
+	bool planet_use_instance = true;
+	
+	float planet_size = 2;
+	int rock_num = 10000;
+	float rock_radius_base = 50;
+	float rock_radius_param = 0.1;
+	float rock_vertical_param = 4;
+
+	float rock_min_size = 0.05, rock_max_size = 0.1;
+	float rock_around_speed = 0.02f;
+
+	srand(1024);
+	
+	Model planet("./Model/planet/planet.obj", true);
+	for (int i = 0; i < planet.materials.size(); i++)
+		planet.materials[i].shininess = 0.1f * 128;
+	Transform planet_tf(glm::vec3(rock_radius_base + 10, 0, 0), glm::vec3(planet_size));
+
+	Model rock("./Model/rock/rock.obj");
+	for (int i = 0; i < rock.materials.size(); i++)
+		rock.materials[i].shininess = 0.1f * 128;
+
+	std::vector<float> rock_radius(rock_num);
+	std::vector<float> rock_angle(rock_num);
+	std::vector<float> rock_y(rock_num);
+
+
+	std::vector<Transform> rock_tfs(rock_num);
+	std::vector<glm::mat4> rock_models(rock_num);
+	for (int i = 0; i < rock_num; i++)
+	{
+		rock_radius[i] = rock_radius_base + rock_radius_param * Utils::RandomFloat(-rock_radius_base, rock_radius_base);
+
+		rock_angle[i] = (float)i / rock_num * 360 + Utils::RandomFloat(-1, 1);
+		rock_y[i] = rock_vertical_param * Utils::RandomFloat(-rock_max_size, rock_max_size);
+
+		glm::vec3 pos = planet_tf.position + 
+									glm::vec3(
+										rock_radius[i] * std::sin(rock_angle[i]),
+										rock_y[i],
+										rock_radius[i] * std::cos(rock_angle[i]));
+		glm::vec3 scale(Utils::RandomFloat(rock_min_size, rock_max_size));
+		glm::vec3 rotate_axis(Utils::RandomFloat(0, 1));
+
+		rock_tfs[i] = Transform(pos, scale, rotate_axis, Utils::RandomInt(0, 360));
+
+		rock_models[i] = rock_tfs[i].GetModel();
+	}
+
+	unsigned int rock_model_instance_vbo;
+	if (planet_use_instance)
+	{
+		glGenBuffers(1, &rock_model_instance_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, rock_model_instance_vbo);
+		glBufferData(GL_ARRAY_BUFFER, rock_num * sizeof(glm::mat4), rock_models.data(), GL_STATIC_DRAW);
+
+		for (int i = 0; i < rock.meshes.size(); i++)
+		{
+			rock.meshes[i].SetInstanceMat4(3);
+		}
+	}
+#pragma endregion
 
 	Time::Init();
-
-	glm::vec3 cubePosition = glm::vec3(0, 0, -3);
 
 #pragma region 配置光源
 	auto lights = CreateLight();
@@ -457,9 +519,11 @@ int main()
 
 	bool use_frame_buffer = false;
 	bool use_box_outline = false;
-	bool active_skybox = true;
+	bool active_skybox = false;
 	bool use_explode = false;
 	bool draw_normal = false;
+	bool rock_move = true;
+	
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -516,23 +580,13 @@ int main()
 				glStencilMask(0xFF);
 			}
 			
-			glm::mat4 model = glm::mat4(1.0f); // 通过将顶点坐标乘以模型矩阵，我们将该顶点坐标变换到世界坐标
-			model = glm::translate(model, cubePositions[i]);
-
 			float angle = 29 * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
 			phong_shader->Use();
-			phong_shader->SetUniformMat4f("model", model);
+			phong_shader->Apply(tf);
 			phong_shader->Apply(*camera, true);
 			phong_shader->Apply(lights);
-
-			// 计算法线矩阵，用于把法向量转换为世界空间坐标
-			// 法线应该只受缩放和旋转变换的影响，而不受位移
-			// 不等比缩放会导致法向量不再垂直于对应的表面
-			// 因此不能直接用模型矩阵对法向量做变换，而是使用一个为法向量专门定制的模型矩阵。这个矩阵称之为法线矩阵：模型矩阵左上角3x3部分的逆矩阵的转置矩阵
-			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-			phong_shader->SetUniformMat3f("NormalMatrix", normal_matrix);
 			phong_shader->SetUniformBool("use_cube_map", false);
 			phong_shader->Apply(cube_material);
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
@@ -548,9 +602,9 @@ int main()
 				glStencilMask(0x00);
 				glDisable(GL_DEPTH_TEST);
 
-				model = glm::scale(model, glm::vec3(1.05));
+				tf.scale = glm::vec3(1.05);
 				outline_shader->Use();
-				outline_shader->SetUniformMat4f("model", model);
+				outline_shader->Apply(tf);
 				outline_shader->Apply(*camera, true);
 				outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
 				cube_mesh.Draw(*outline_shader);
@@ -619,7 +673,7 @@ int main()
 #pragma endregion
 
 #pragma region  light box
-		for (int i = 0; i < lights.size() - 1; i++)
+		for (int i = 0; i < lights.size(); i++)
 		{
 			Light* light = lights[i];
 
@@ -632,6 +686,48 @@ int main()
 			light_shaderProgram->Apply(empty_material);
 
 			light_mesh.Draw(*light_shaderProgram);
+		}
+#pragma endregion
+
+#pragma region planet
+		phong_shader->Use();
+		phong_shader->Apply(*camera, true);
+		phong_shader->Apply(lights);
+		phong_shader->Apply(planet_tf);
+		phong_shader->SetUniformBool("use_cube_map", false);
+		planet.Draw(*phong_shader);
+
+		if (rock_move)
+		{
+			for (int i = 0; i < rock_num; i++)
+			{
+				rock_tfs[i].position = planet_tf.position +
+					glm::vec3(
+						rock_radius[i] * std::sin(rock_angle[i] + glfwGetTime() * rock_around_speed),
+						rock_y[i],
+						rock_radius[i] * std::cos(rock_angle[i] + glfwGetTime() * rock_around_speed));
+				if (planet_use_instance)
+					rock_models[i] = rock_tfs[i].GetModel();
+			}
+		}
+		if (planet_use_instance)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, rock_model_instance_vbo);
+			glBufferData(GL_ARRAY_BUFFER, rock_num * sizeof(glm::mat4), rock_models.data(), GL_STATIC_DRAW);
+
+			phong_instance_array_shader->Use();
+			phong_instance_array_shader->Apply(*camera, true);
+			phong_instance_array_shader->Apply(lights);
+			phong_instance_array_shader->SetUniformBool("use_cube_map", false);
+			rock.DrawInstance(*phong_instance_array_shader, rock_num);
+		}
+		else
+		{
+			for (int i = 0; i < rock_num; i++)
+			{
+				phong_shader->Apply(rock_tfs[i]);
+				rock.Draw(*phong_shader);
+			}
 		}
 #pragma endregion
 

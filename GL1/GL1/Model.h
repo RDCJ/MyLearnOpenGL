@@ -33,6 +33,12 @@ class Model: IDrawable
 		/// </summary>
 		/// <param name="shader"></param>
 		void Draw(ShaderProgram& shader) override;
+		/// <summary>
+		/// 对所有mesh调用它们各自的DrawInstance函数
+		/// </summary>
+		/// <param name="shader"></param>
+		/// <param name="num"></param>
+		void DrawInstance(ShaderProgram& shader, int num) override;
 
 	private:
 		/// <summary>

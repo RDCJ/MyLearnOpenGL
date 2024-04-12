@@ -10,6 +10,28 @@ Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices)
 	SetupMesh();
 }
 
+void Mesh::SetInstanceMat4(int location)
+{
+	glBindVertexArray(VAO);
+	GLsizei vec4_size = sizeof(glm::vec4);
+
+	// 顶点属性最大允许的数据大小等于一个vec4。
+	// 因为一个mat4本质上是4个vec4，因此需要为这个矩阵预留4个顶点属性
+	for (int i = 0; i < 4; i++)
+	{
+		glEnableVertexAttribArray(location + i);
+		glVertexAttribPointer(location + i, 4, GL_FLOAT, GL_FALSE, 4 * vec4_size, (void*)(i * vec4_size));
+
+		// glVertexAttribDivisor告诉了OpenGL该什么时候更新顶点属性的内容至新一组数据
+		// 第一个参数指定顶点属性，第二个参数是属性除数
+		// 默认情况下，属性除数是0，顶点着色器每次迭代时更新顶点属性
+		// 将它设置为1时，OpenGL在渲染一个新实例的时候更新顶点属性
+		// 设置为2时，每2个实例更新一次属性，以此类推
+		glVertexAttribDivisor(location + i, 1);
+	}
+	glBindVertexArray(0);
+}
+
 void Mesh::Draw(ShaderProgram& shader)
 {
 	//// 先解除其他纹理的绑定
