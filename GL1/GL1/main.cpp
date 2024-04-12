@@ -152,6 +152,7 @@ int main()
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 	ShaderProgram* explode_shader = new ShaderProgram("./Shader/explode.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
+	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/phong_shader.frag");
 
 	Material empty_material;
 
@@ -349,6 +350,20 @@ int main()
 	Material skybox_material(&skybox_texture);
 	Mesh skybox_mesh(skybox_vertices, _indices);
 #pragma endregion
+
+#pragma region box instance model matrix
+	int box_instance_num = 100;
+
+	std::vector<glm::mat4> box_instance_model;
+	for (int i = 0; i < box_instance_num; i++)
+	{
+		Transform tf;
+		tf.position = glm::vec3(0.05 * i * std::sin(i), 0.05 * i * std::cos(i), 0.05 * i * std::cos(i) * std::sin(i)) + glm::vec3(0, 0, 10);
+		tf.scale = glm::vec3(0.15);
+		box_instance_model.push_back(tf.GetModel());
+	}
+#pragma endregion
+
 
 	Time::Init();
 
@@ -549,7 +564,24 @@ int main()
 			}
 		}
 #pragma endregion
-		
+
+#pragma region box ÊµÀý»¯äÖÈ¾
+		phong_instance_shader->Use();
+		phong_instance_shader->Apply(*camera, true);
+		phong_instance_shader->Apply(lights);
+		phong_instance_shader->SetUniformBool("use_cube_map", false);
+		phong_instance_shader->Apply(cube_material);
+
+		for (int i = 1; i < box_instance_num; i++)
+		{
+			auto model = box_instance_model[i];
+			phong_instance_shader->SetUniformMat4f("model[" + std::to_string(i) + "]", model);
+			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
+			phong_instance_shader->SetUniformMat3f("NormalMatrix[" + std::to_string(i) + "]", normal_matrix);
+		}
+		cube_mesh.DrawInstance(*phong_instance_shader, box_instance_num);
+#pragma endregion
+
 #pragma region nanosuit
 
 		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.15f));

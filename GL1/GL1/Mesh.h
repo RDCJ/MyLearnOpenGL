@@ -25,6 +25,7 @@ class Mesh : public IDrawable
 		Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices);
 
 		void Draw(ShaderProgram& shader) override;
+		void DrawInstance(ShaderProgram& shader, int num);
 
 	private:
 		/// <summary>
