@@ -145,9 +145,9 @@ int main()
 	if (!InitGLAD()) return -1;
 
 	ShaderProgram* light_shaderProgram = new ShaderProgram("./Shader/LightVert.vert", "./Shader/LightFrag.frag");
-	ShaderProgram* phong_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/phong_shader.frag");
-	ShaderProgram* outline_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/SingleColor.frag");
-	ShaderProgram* blend_shader = new ShaderProgram("./Shader/shader.vert", "./Shader/blend_shader.frag");
+	ShaderProgram* phong_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/phong_shader.frag");
+	ShaderProgram* outline_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/SingleColor.frag");
+	ShaderProgram* blend_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/blend_shader.frag");
 	ShaderProgram* frame_buffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/simple_texture.frag");
 	ShaderProgram* skybox_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox.frag");
 	ShaderProgram* explode_shader = new ShaderProgram("./Shader/explode.vert", "./Shader/explode.geo", "./Shader/phong_shader_with_geo.frag");
@@ -444,7 +444,7 @@ int main()
 	bool use_box_outline = false;
 	bool active_skybox = true;
 	bool use_explode = false;
-	bool draw_normal = true;
+	bool draw_normal = false;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
