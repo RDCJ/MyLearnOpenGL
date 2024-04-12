@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
+#include <cstdlib>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <assimp/Importer.hpp>
@@ -24,6 +25,9 @@ public:
 	static const glm::vec3 Right;
 	static const glm::vec3 Forward;
 	static const glm::vec3 Back;
+	
+	static int RandomInt(int a, int b);
+	static float RandomFloat(float a, float b);
 };
 
 

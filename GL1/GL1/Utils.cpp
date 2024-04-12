@@ -38,3 +38,18 @@ glm::vec2 Utils::ToGlmV2(aiVector3D& v)
 {
 	return glm::vec2(v.x, v.y);
 }
+
+int Utils::RandomInt(int a, int b)
+{
+	return a + std::rand() % (b - a);
+}
+
+float Utils::RandomFloat(float a, float b)
+{
+	// 生成01之间的随机浮点数
+	float randomFraction = std::rand() / (float)RAND_MAX;
+
+	// 将随机浮点数映射到[a, b]范围内
+	return a + randomFraction * (b - a);
+}
+
