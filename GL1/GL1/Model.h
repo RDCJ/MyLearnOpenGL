@@ -23,7 +23,7 @@ class Model: IDrawable
 	public:
 		std::vector<Mesh> meshes;
 		std::vector<Material> materials;
-		Model(const char* path)
+		Model(const char* path, bool texture_flip_vertical=false):texture_flip_vertical(texture_flip_vertical)
 		{
 			LoadModel(path);
 		}
@@ -59,6 +59,9 @@ class Model: IDrawable
 		/// <returns></returns>
 		std::tuple<Mesh, Material> ProcessMesh(aiMesh* mesh, const aiScene* scene);
 		std::vector<Texture2D> LoadMaterialTextures(aiMaterial* material, aiTextureType type, std::string typeName);
+
+		bool texture_flip_vertical;
+
 };
 #endif // !MODEL_H
 
