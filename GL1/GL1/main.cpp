@@ -117,6 +117,9 @@ static std::vector<Light*> CreateLight()
 int main() 
 {
 	InitGLFW();
+
+	// 在创建窗口之前调用glfwWindowHint, 使用一个包含N个样本的多重采样缓冲
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	
 	// glfwCreateWindow函数需要窗口的宽和高作为它的前两个参数。第三个参数表示这个窗口的名称（标题）
 	GLFWwindow* window = glfwCreateWindow(ScreenWidth, ScreenHeight, "Learn", NULL, NULL);
@@ -451,7 +454,9 @@ int main()
 	// glBlendFunc函数接受两个参数，来设置源和目标因子
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
+	// 启用多重采样。在大多数OpenGL的驱动上，多重采样都是默认启用
+	glEnable(GL_MULTISAMPLE);
+	
 #pragma region 创建帧缓冲
 	const float frame_buffer_scale = 0.07f;
 	const int frame_buffer_width = ScreenWidth * frame_buffer_scale;
