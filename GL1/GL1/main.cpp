@@ -15,11 +15,14 @@
 #include "Model.h"
 #include "Object.h"
 #include "FrameBuffer.h"
+#include "FPSController.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
 
-Camera* camera = nullptr;
+PerspectiveCamera* camera = nullptr;
+FPSController* fps_crtl = nullptr;
+
 bool firstMouse = true;
 glm::vec2 mouseLastPos = 0.5f * glm::vec2(ScreenWidth, ScreenHeight);
 
@@ -74,12 +77,12 @@ void MouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
 	float yoffset = mouseLastPos.y - ypos;
 	mouseLastPos.x = xpos;
 	mouseLastPos.y = ypos;
-	camera->OnMouseMove(xoffset, yoffset);
+	fps_crtl->OnMouseMove(xoffset, yoffset);
 }
 
 void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera->OnMouseScroll(yoffset);
+	fps_crtl->OnMouseScroll(yoffset);
 }
 
 static std::vector<Light*> CreateLight()
@@ -161,7 +164,8 @@ int main()
 
 	Material empty_material;
 
-	camera = new Camera(window, 45.0f, (float)ScreenWidth / ScreenHeight);
+	camera = new PerspectiveCamera(45.0f, (float)ScreenWidth / ScreenHeight);
+	fps_crtl = new FPSController(camera, window);
 	// 给camera创建一个uniform缓冲对象
 	camera->uniform_matrices.GenBuffer(2 * sizeof(glm::mat4), 0);
 
@@ -483,7 +487,22 @@ int main()
 	Mesh frame_buffer_mesh(square_vertices, square_indices);
 #pragma endregion
 
-	bool use_frame_buffer = true;
+#pragma region 深度贴图帧缓冲
+	//FrameBuffer depth_map_buffer(1024, 1024);
+
+	//TexParams depth_tex_params = {
+	//	{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
+	//	{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
+	//	{GL_TEXTURE_WRAP_S, GL_REPEAT},
+	//	{GL_TEXTURE_WRAP_T, GL_REPEAT}
+	//};
+	//// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
+	//depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, 0, depth_tex_params);
+
+#pragma endregion
+
+
+	bool use_frame_buffer = false;
 	bool use_box_outline = false;
 	bool active_skybox = false;
 	bool use_explode = false;
@@ -499,7 +518,7 @@ int main()
 		Time::Update();
 
 		ProcessInput(window);
-		camera->Update();
+		fps_crtl->Update();
 		camera->FillUniformMatrices();
 
 		if (use_frame_buffer)
