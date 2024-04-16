@@ -254,16 +254,14 @@ int main()
 	}
 
 	Texture2D diffuse_map = Texture2D("Image/container2.png", "texture_diffuse");
-	diffuse_map.SetParameters();
 	diffuse_map.GenerateMipmap();
 
 	Texture2D specular_map = Texture2D("Image/container2_specular.png", "texture_specular");
-	specular_map.SetParameters();
 	specular_map.GenerateMipmap();
 
 	Texture2D emission_map = Texture2D("Image/matrix.jpg", "texture_emission");
-	emission_map.SetParameters();
 	emission_map.GenerateMipmap();
+
 	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
 
 	Material cube_material(_textures, 0.4f * 128, 1.0 / 1.52);

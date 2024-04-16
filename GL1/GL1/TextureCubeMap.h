@@ -6,18 +6,17 @@
 
 #include <glad/glad.h>
 #include "stb_image.h"
+#include "Texture.h"
 
-class TextureCubeMap
+class TextureCubeMap: public Texture
 {
 	public:
-		unsigned int GetID() { return ID; }
 		TextureCubeMap(std::vector<std::string>& img_paths);
-		void SetParameters();
-		void Bind();
+		void SetDefaultParameters();
 
 	private:
-		unsigned int ID;
 		void ToGL(int width, int height, int nChannel, unsigned char* img_data, int position);
+		GLenum GLTarget() override { return GL_TEXTURE_CUBE_MAP; }
 
 };
 

@@ -21,7 +21,7 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 	{
 		ToGL(width, height, nrChannels, img_data);
 		GenerateMipmap();
-		SetParameters();
+		SetDefaultParameters();
 	}
 	else
 		std::cout<< "Texture failed to load at path: " << image_path << std::endl;
@@ -46,39 +46,21 @@ Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& mode
 	}
 }
 
-void Texture2D::SetParameters()
+void Texture2D::SetDefaultParameters()
 {
 	// glTexParameteri对绑定的纹理对象进行配置
 	// 第二个参数需要我们指定设置的选项与应用的纹理轴，WRAP表示配置环绕方式，S,T对应x,y轴
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GLTarget(), GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GLTarget(), GL_TEXTURE_WRAP_T, GL_REPEAT);
 	// MIN, MAG表示当进行放大(Magnify)和缩小(Minify)操作的时候可以设置纹理过滤的选项，GL_LINEAR：线性过滤
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-void Texture2D::SetParameters(GLenum option, GLenum value)
-{
-	glTexParameteri(GL_TEXTURE_2D, option, value);
-}
-
-void Texture2D::SetParameters(const std::map<GLenum, GLenum>& params)
-{
-	for (auto& param : params)
-	{
-		SetParameters(param.first, param.second);
-	}
+	glTexParameteri(GLTarget(), GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GLTarget(), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 
 void Texture2D::GenerateMipmap()
 {
 	glGenerateMipmap(GL_TEXTURE_2D);
-}
-
-void Texture2D::Bind()
-{
-	glBindTexture(GL_TEXTURE_2D, ID);
 }
 
 void Texture2D::ToGL(int width, int height, int nChannel, unsigned char* img_data)
@@ -109,5 +91,5 @@ void Texture2D::ToGL(int width, int height, int nChannel, unsigned char* img_dat
 	第七第八个参数定义了源图的格式和数据类型。
 	最后一个参数是真正的图像数据
 		*/
-	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, img_data);
+	glTexImage2D(GLTarget(), 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, img_data);
 }

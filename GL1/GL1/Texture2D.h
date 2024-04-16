@@ -8,8 +8,9 @@
 #include <iostream>
 #include <unordered_map>
 #include <map>
+#include "Texture.h"
 
-class Texture2D
+class Texture2D: public Texture
 {
 	public:
 		unsigned int GetID() { return ID; }
@@ -23,14 +24,8 @@ class Texture2D
 		/// <param name="_type"></param>
 		/// <returns></returns>
 		static Texture2D GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical=true);
-		void SetParameters();
-		void SetParameters(GLenum option, GLenum value);
-		void SetParameters(const std::map<GLenum, GLenum>& params);
+		void SetDefaultParameters();
 		void GenerateMipmap();
-		/// <summary>
-		/// 绑定到GL_TEXTURE_2D
-		/// </summary>
-		void Bind();
 		/// <summary>
 		/// 纹理的类型
 		/// </summary>
@@ -40,12 +35,10 @@ class Texture2D
 		/// </summary>
 		static const std::vector<std::string> TextureTypes;
 
-
 	private:
 		static std::unordered_map<std::string, Texture2D> LoadedTextures;
-		unsigned int ID = 0;
 		void ToGL(int width, int height, int nChannel, unsigned char* img_data);
-		
+		GLenum GLTarget() override { return GL_TEXTURE_2D; }
 };
 
 #endif // ! TEXTURE2D_H
