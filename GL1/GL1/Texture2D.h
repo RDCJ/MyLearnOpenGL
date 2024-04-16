@@ -15,7 +15,10 @@ class Texture2D: public Texture
 	public:
 		unsigned int GetID() { return ID; }
 		Texture2D() { type = ""; ID = 0; }
+
 		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true);
+
+		Texture2D(int width, int height, GLenum format, void* data);
 		/// <summary>
 		/// 返回全局的纹理储存中的目标纹理，如果尚未加载就先从文件加载到全局储存中再返回
 		/// </summary>

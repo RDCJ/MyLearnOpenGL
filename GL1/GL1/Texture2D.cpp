@@ -29,6 +29,14 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 	stbi_image_free(img_data);
 }
 
+Texture2D::Texture2D(int width, int height, GLenum format, void* data)
+{
+	glGenTextures(1, &ID);
+	Bind();
+
+	glTexImage2D(GLTarget(), 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+}
+
 Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical)
 {
 	std::string file_path = model_directory + "/" + std::string(file_name);

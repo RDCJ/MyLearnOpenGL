@@ -14,6 +14,7 @@
 #include "Time.h"
 #include "Model.h"
 #include "Object.h"
+#include "FrameBuffer.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -460,67 +461,19 @@ int main()
 	const int frame_buffer_width = ScreenWidth * frame_buffer_scale;
 	const int frame_buffer_height = ScreenHeight * frame_buffer_scale;
 
-	unsigned int frame_buffer;
-	// 创建一个帧缓冲对象
-	glGenFramebuffers(1, &frame_buffer);
-	// glBindFramebuffer: 绑定帧缓冲, 绑定到GL_FRAMEBUFFER目标之后，所有的读取和写入帧缓冲的操作将会影响当前绑定的帧缓冲
-	glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
+	FrameBuffer frame_buffer(frame_buffer_width, frame_buffer_height);
 	// 给帧缓冲创建附件的时候，我们有两个选项：纹理或渲染缓冲对象
 
 	// 附加纹理
-	unsigned int texColorBuffer;
-	glGenTextures(1, &texColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame_buffer_width, frame_buffer_height, 0, GL_RGB, GL_UNSIGNED_INT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 核在对屏幕纹理的边缘进行采样的时候，由于还会对中心像素周围的8个像素进行采样，其实会取到纹理之外的像素。
-	// 由于环绕方式默认是GL_REPEAT，所以在没有设置的情况下取到的是屏幕另一边的像素，而另一边的像素本不应该对中心像素产生影响，这就可能会在屏幕边缘产生很奇怪的条纹。
-	// 为了消除这一问题，我们可以将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE。
-	// 这样子在取到纹理外的像素时，就能够重复边缘的像素来更精确地估计最终的值了。
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
-	// glFramebufferTexture2D参数：
-	// target：帧缓冲的目标（绘制、读取或者两者皆有）
-	// attachment：我们想要附加的附件类型。当前我们正在附加一个颜色附件。注意最后的0意味着我们可以附加多个颜色附件。我们将在之后的教程中提到。
-	//	textarget：你希望附加的纹理类型
-	// texture：要附加的纹理id
-	//	level：mipmap的级别
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+	frame_buffer.AddTexture(GL_RGB);
 
 	// 附加渲染缓冲对象
-	// 渲染缓冲对象的数据储存为OpenGL原生的渲染格式，它是为离屏渲染到帧缓冲优化过
-	// 当写入或者复制它的数据到其它缓冲中时是非常快的。所以，交换缓冲这样的操作在使用渲染缓冲对象时会非常快
-	// 渲染缓冲对象通常都是只写的，所以你不能读取它们（比如使用纹理访问）
-	// 由于渲染缓冲对象通常都是只写的，它们会经常用于深度和模板附件，因为大部分时间我们都不需要从深度和模板缓冲中读取值，只关心深度和模板测试
-	unsigned int rbo;
-	// 创建一个渲染缓冲对象
-	glGenRenderbuffers(1, &rbo);
-	// 绑定渲染缓冲对象rbo到GL_RENDERBUFFER，让之后所有的渲染缓冲操作影响当前的rbo
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	// 给渲染缓冲对象分配内存。
-	// GL_DEPTH24_STENCIL8作为内部格式，它封装了24位的深度和8位的模板缓冲，将该渲染缓冲对象用于深度和模板渲染缓冲
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame_buffer_width, frame_buffer_height);
-	// 解绑
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	// 将渲染缓冲对象附加到帧缓冲上
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	// 检查帧缓冲是否是完整的，如果不是，将打印错误信息。
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	}
-	// 解绑帧缓冲
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+	frame_buffer.AddRenderBuffer();
 
 	Mesh frame_buffer_mesh(square_vertices, square_indices);
 #pragma endregion
 
-	bool use_frame_buffer = false;
+	bool use_frame_buffer = true;
 	bool use_box_outline = false;
 	bool active_skybox = false;
 	bool use_explode = false;
@@ -541,9 +494,9 @@ int main()
 
 		if (use_frame_buffer)
 		{
-			glViewport(0, 0, frame_buffer_width, frame_buffer_height);
+			frame_buffer.UpdateViewport();
 			// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
-			glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
+			frame_buffer.Bind();
 		}
 
 		glEnable(GL_DEPTH_TEST);
@@ -797,7 +750,7 @@ int main()
 			frame_buffer_shader->Use();
 			frame_buffer_shader->SetUniformInt("tex", 0);
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+			glBindTexture(GL_TEXTURE_2D, frame_buffer.color_buffer->GetID());
 			frame_buffer_mesh.Draw(*frame_buffer_shader);
 		}
 
