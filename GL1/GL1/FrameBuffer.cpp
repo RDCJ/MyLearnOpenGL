@@ -6,14 +6,20 @@ FrameBuffer::FrameBuffer(int buffer_width, int buffer_height): buffer_width(buff
 	glGenFramebuffers(1, &ID);
 }
 
-void FrameBuffer::AddTexture(GLenum format, int mipmap_level, const TexParams& params)
+void FrameBuffer::AddTexture(GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
 {
-	Bind();
 	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
-	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL);
+	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL, data_type);
 
 	color_buffer->SetParameters(params);
 
+	GLenum attachment;
+	if (format == GL_DEPTH_COMPONENT)
+		attachment = GL_DEPTH_ATTACHMENT;
+	else
+		attachment = GL_COLOR_ATTACHMENT0;
+
+	Bind();
 	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
 	// glFramebufferTexture2D参数：
 	// target：帧缓冲的目标（绘制、读取或者两者皆有）
@@ -21,8 +27,9 @@ void FrameBuffer::AddTexture(GLenum format, int mipmap_level, const TexParams& p
 	//	textarget：你希望附加的纹理类型
 	// texture：要附加的纹理id
 	//	level：mipmap的级别
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_buffer->GetID(), mipmap_level);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, color_buffer->GetID(), mipmap_level);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FrameBuffer::AddRenderBuffer()

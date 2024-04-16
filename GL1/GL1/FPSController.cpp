@@ -47,5 +47,5 @@ void FPSController::OnMouseMove(float x_offset, float y_offset)
 
 void FPSController::OnMouseScroll(float y_offset)
 {
-	camera->FOV = glm::clamp(camera->FOV - y_offset, 1.0f, 100.0f);
+	//camera->FOV = glm::clamp(camera->FOV - y_offset, 1.0f, 100.0f);
 }

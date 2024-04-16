@@ -16,11 +16,12 @@
 #include "Object.h"
 #include "FrameBuffer.h"
 #include "FPSController.h"
+#include "OrthoCamera.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
 
-PerspectiveCamera* camera = nullptr;
+Camera* camera = nullptr;
 FPSController* fps_crtl = nullptr;
 
 bool firstMouse = true;
@@ -161,10 +162,13 @@ int main()
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
 	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/Blinn_Phong.frag");
 	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/Blinn_Phong.frag");
+	//ShaderProgram* depth_shader = new ShaderProgram("./Shader/SimpleDepthShader.vert", "./Shader/Empty.frag");
+	//ShaderProgram* depth_texture_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Depth.frag");
 
 	Material empty_material;
 
-	camera = new PerspectiveCamera(45.0f, (float)ScreenWidth / ScreenHeight);
+	camera = new OrthoCamera(-10, 10, -10, 10, 0.1, 100);
+	//camera = new PerspectiveCamera(45.0f, (float)ScreenWidth / ScreenHeight);
 	fps_crtl = new FPSController(camera, window);
 	// 给camera创建一个uniform缓冲对象
 	camera->uniform_matrices.GenBuffer(2 * sizeof(glm::mat4), 0);
@@ -436,10 +440,9 @@ int main()
 #pragma endregion
 
 	Time::Init();
-
-#pragma region 配置光源
+	
 	auto lights = CreateLight();
-#pragma endregion
+
 	// 启用面剔除
 	glEnable(GL_CULL_FACE);
 	// glCullFace函数有三个可用的选项：
@@ -459,50 +462,27 @@ int main()
 
 	// 启用多重采样。在大多数OpenGL的驱动上，多重采样都是默认启用
 	glEnable(GL_MULTISAMPLE);
-	
-#pragma region 创建帧缓冲
-	const float frame_buffer_scale = 0.07f;
-	const int frame_buffer_width = ScreenWidth * frame_buffer_scale;
-	const int frame_buffer_height = ScreenHeight * frame_buffer_scale;
 
-	FrameBuffer frame_buffer(frame_buffer_width, frame_buffer_height);
-	// 给帧缓冲创建附件的时候，我们有两个选项：纹理或渲染缓冲对象
-
-	// 附加纹理
-	TexParams params = {
-		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
-		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
-		// 核在对屏幕纹理的边缘进行采样的时候，由于还会对中心像素周围的8个像素进行采样，其实会取到纹理之外的像素。
-		// 由于环绕方式默认是GL_REPEAT，所以在没有设置的情况下取到的是屏幕另一边的像素，而另一边的像素本不应该对中心像素产生影响，这就可能会在屏幕边缘产生很奇怪的条纹。
-		// 为了消除这一问题，我们可以将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE。
-		// 这样子在取到纹理外的像素时，就能够重复边缘的像素来更精确地估计最终的值了。
-		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
-		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
-	};
-	frame_buffer.AddTexture(GL_RGB, 0, params);
-
-	// 附加渲染缓冲对象
-	frame_buffer.AddRenderBuffer();
-
-	Mesh frame_buffer_mesh(square_vertices, square_indices);
-#pragma endregion
 
 #pragma region 深度贴图帧缓冲
-	//FrameBuffer depth_map_buffer(1024, 1024);
+	Mesh frame_buffer_mesh(square_vertices, square_indices);
 
-	//TexParams depth_tex_params = {
-	//	{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
-	//	{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
-	//	{GL_TEXTURE_WRAP_S, GL_REPEAT},
-	//	{GL_TEXTURE_WRAP_T, GL_REPEAT}
-	//};
-	//// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
-	//depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, 0, depth_tex_params);
+	FrameBuffer depth_map_buffer(1024, 1024);
 
+	TexParams depth_tex_params = {
+		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
+		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
+		{GL_TEXTURE_WRAP_S, GL_REPEAT},
+		{GL_TEXTURE_WRAP_T, GL_REPEAT}
+	};
+	// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
+	depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
+
+	OrthoCamera shadow_camera(-10, 10, -10, 10, 0.1, 100);
+	shadow_camera.position = lights[0]->position;
+	shadow_camera.UpdateFront(lights[0]->direction);
 #pragma endregion
 
-
-	bool use_frame_buffer = false;
 	bool use_box_outline = false;
 	bool active_skybox = false;
 	bool use_explode = false;
@@ -521,13 +501,6 @@ int main()
 		fps_crtl->Update();
 		camera->FillUniformMatrices();
 
-		if (use_frame_buffer)
-		{
-			frame_buffer.UpdateViewport();
-			// 绑定帧缓冲, 让之后的渲染影响当前绑定的帧缓冲
-			frame_buffer.Bind();
-		}
-
 		glEnable(GL_DEPTH_TEST);
 
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
@@ -536,8 +509,43 @@ int main()
 		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
-		//spot_light->position = camera->position;
-		//spot_light->direction = camera->Front;
+
+		
+/*
+#pragma region 深度贴图
+		
+		depth_map_buffer.UpdateViewport();
+		depth_map_buffer.Bind();
+
+		depth_shader->Use();
+		depth_shader->Apply(shadow_camera);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+		for (int i = 0; i < 10; i++)
+		{
+			glEnable(GL_DEPTH_TEST);
+			float angle = 29 * i;
+			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
+			depth_shader->Apply(tf);
+			cube_mesh.Draw(*depth_shader);
+		}
+#pragma endregion
+
+		// 解绑帧缓冲
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
+		glViewport(0, 0, ScreenWidth, ScreenHeight);
+		// 清除屏幕的颜色和缓冲
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
+		// 将附加纹理作为贴图，渲染一个四边形
+		depth_texture_shader->Use();
+		depth_texture_shader->SetUniformInt("tex", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
+		frame_buffer_mesh.Draw(*depth_texture_shader);
+		*/
 
 #pragma region box
 		for (int i = 0; i < 10; i++)
@@ -763,25 +771,6 @@ int main()
 			it->second->Draw(*blend_shader);
 		}
 #pragma endregion
-
-		if (use_frame_buffer)
-		{
-			glViewport(0, 0, ScreenWidth, ScreenHeight);
-			// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
-			// 解绑帧缓冲
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDisable(GL_DEPTH_TEST);
-			// 清除屏幕的颜色和缓冲
-			glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			// 将附加纹理作为贴图，渲染一个四边形
-			frame_buffer_shader->Use();
-			frame_buffer_shader->SetUniformInt("tex", 0);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, frame_buffer.color_buffer->GetID());
-			frame_buffer_mesh.Draw(*frame_buffer_shader);
-		}
 
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
