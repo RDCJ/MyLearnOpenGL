@@ -10,12 +10,6 @@
 #include "Time.h"
 #include "Utils.h"
 
-enum ProjectionType
-{
-	Perspective,
-	Orthographic
-};
-
 class Camera
 {
 	public:
