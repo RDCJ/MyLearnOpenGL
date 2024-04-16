@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
+#include <map>
 
 class Texture2D
 {
@@ -23,6 +24,8 @@ class Texture2D
 		/// <returns></returns>
 		static Texture2D GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical=true);
 		void SetParameters();
+		void SetParameters(GLenum option, GLenum value);
+		void SetParameters(const std::map<GLenum, GLenum>& params);
 		void GenerateMipmap();
 		/// <summary>
 		/// °ó¶¨µ½GL_TEXTURE_2D

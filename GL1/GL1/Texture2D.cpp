@@ -57,6 +57,20 @@ void Texture2D::SetParameters()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+void Texture2D::SetParameters(GLenum option, GLenum value)
+{
+	glTexParameteri(GL_TEXTURE_2D, option, value);
+}
+
+void Texture2D::SetParameters(const std::map<GLenum, GLenum>& params)
+{
+	for (auto& param : params)
+	{
+		SetParameters(param.first, param.second);
+	}
+}
+
+
 void Texture2D::GenerateMipmap()
 {
 	glGenerateMipmap(GL_TEXTURE_2D);
