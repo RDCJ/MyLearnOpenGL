@@ -10,7 +10,7 @@ class FrameBuffer
 {
 	public:
 		FrameBuffer(int buffer_width, int buffer_height);
-		void AddTexture(GLenum format=GL_RGB, int mipmap_level= 0);
+		void AddTexture(GLenum format=GL_RGB, int mipmap_level= 0, const TexParams& params=TexParams());
 		void AddRenderBuffer();
 		/// <summary>
 		/// 用帧缓冲的大小更新Viewport

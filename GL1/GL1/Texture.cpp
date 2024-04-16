@@ -6,7 +6,7 @@ void Texture::SetParameters(GLenum option, GLenum value)
 	glTexParameteri(GLTarget(), option, value);
 }
 
-void Texture::SetParameters(const std::map<GLenum, GLenum>&params)
+void Texture::SetParameters(const TexParams& params)
 {
 	Bind();
 	GLenum target = GLTarget();

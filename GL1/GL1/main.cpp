@@ -92,11 +92,11 @@ static std::vector<Light*> CreateLight()
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
-	for (int i = 0; i < 2; i++)
-	{
-		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
-		lights.push_back(light);
-	}
+	//for (int i = 0; i < 4; i++)
+	//{
+	//	Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
+	//	lights.push_back(light);
+	//}
 
 	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
 	Light* directional_light = Light::CreateDirectional(glm::vec3(0, 2, 0), glm::vec3(-1, -1, -1));
@@ -465,7 +465,17 @@ int main()
 	// 给帧缓冲创建附件的时候，我们有两个选项：纹理或渲染缓冲对象
 
 	// 附加纹理
-	frame_buffer.AddTexture(GL_RGB);
+	TexParams params = {
+		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
+		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
+		// 核在对屏幕纹理的边缘进行采样的时候，由于还会对中心像素周围的8个像素进行采样，其实会取到纹理之外的像素。
+		// 由于环绕方式默认是GL_REPEAT，所以在没有设置的情况下取到的是屏幕另一边的像素，而另一边的像素本不应该对中心像素产生影响，这就可能会在屏幕边缘产生很奇怪的条纹。
+		// 为了消除这一问题，我们可以将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE。
+		// 这样子在取到纹理外的像素时，就能够重复边缘的像素来更精确地估计最终的值了。
+		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
+		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
+	};
+	frame_buffer.AddTexture(GL_RGB, 0, params);
 
 	// 附加渲染缓冲对象
 	frame_buffer.AddRenderBuffer();

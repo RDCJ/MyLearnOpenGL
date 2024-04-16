@@ -6,22 +6,12 @@ FrameBuffer::FrameBuffer(int buffer_width, int buffer_height): buffer_width(buff
 	glGenFramebuffers(1, &ID);
 }
 
-void FrameBuffer::AddTexture(GLenum format, int mipmap_level)
+void FrameBuffer::AddTexture(GLenum format, int mipmap_level, const TexParams& params)
 {
 	Bind();
 	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
 	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL);
 
-	std::map<GLenum, GLenum> params = {
-		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
-		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
-		// 核在对屏幕纹理的边缘进行采样的时候，由于还会对中心像素周围的8个像素进行采样，其实会取到纹理之外的像素。
-		// 由于环绕方式默认是GL_REPEAT，所以在没有设置的情况下取到的是屏幕另一边的像素，而另一边的像素本不应该对中心像素产生影响，这就可能会在屏幕边缘产生很奇怪的条纹。
-		// 为了消除这一问题，我们可以将屏幕纹理的环绕方式都设置为GL_CLAMP_TO_EDGE。
-		// 这样子在取到纹理外的像素时，就能够重复边缘的像素来更精确地估计最终的值了。
-		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
-		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
-	};
 	color_buffer->SetParameters(params);
 
 	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
