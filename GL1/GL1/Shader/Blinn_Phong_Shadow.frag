@@ -77,14 +77,26 @@ float CalcShadow(vec3 lightDir, vec3 normal)
     // 解决：只要投影向量的z坐标大于1.0，就把shadow的值强制设为0.0
     if (projection_coord.z > 1.0) return 0;
 
-    // 计算光的位置视野下最近的深度
-    float cloestDepth = texture(shadow_map, projection_coord.xy).r;
-
+    // 当前片元在光源空间的深度
     float currentDepth = projection_coord.z;
-    
-    // float bias = 0.005;
+    // 深度偏移
     float bias = max(0.05 * (1 - dot(normal, lightDir)), 0.005);
-    return currentDepth - bias > cloestDepth ? 1.0 : 0.0;
+    // textureSize返回一个给定纹理的vec2类型的宽和高。第二个参数表示mipmap的等级
+    // 用1除以它返回一个单独纹理像素的大小
+    vec2 texelSize = 1.0 / textureSize(shadow_map, 0);
+
+    float shadow = 0;
+    for (int i=-1; i<=1; i++)
+    {
+        for (int j=-1; j<=1; j++)
+        {
+            vec2 sample_point = projection_coord.xy + vec2(i, j) * texelSize;
+            float sample_depth = texture(shadow_map, sample_point).r;
+            shadow += currentDepth - bias > sample_depth ? 1.0 : 0.0;
+        }
+    }
+
+    return shadow / 9.0;
 }
 
 
