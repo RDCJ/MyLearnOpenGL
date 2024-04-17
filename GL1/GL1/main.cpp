@@ -511,6 +511,7 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
 #pragma region 深度贴图
+		glCullFace(GL_FRONT);
 		depth_map_buffer.UpdateViewport();
 		depth_map_buffer.Bind();
 		// 绑定帧缓冲后要清除之前的缓存
@@ -533,17 +534,8 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		//glDisable(GL_DEPTH_TEST);
-		//// 将附加纹理作为贴图，渲染一个四边形
-		//depth_texture_shader->Use();
-		//depth_texture_shader->SetUniformInt("tex", 0);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
-		//frame_buffer_mesh.Draw(*depth_texture_shader);
 
-
-
-
+		glCullFace(GL_BACK);
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
