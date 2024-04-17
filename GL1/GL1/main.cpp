@@ -525,6 +525,8 @@ int main()
 		glClear(GL_DEPTH_BUFFER_BIT);
 		depth_shader->Use();
 		depth_shader->SetUniformMat4f("lightSpaceMat", shadow_camera.GetProjection()* shadow_camera.GetView());
+		depth_shader->SetUniformFloat("z_near", shadow_camera.Z_Near);
+		depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		for (int i = 0; i < 10; i++)
