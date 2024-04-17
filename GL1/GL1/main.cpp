@@ -103,7 +103,7 @@ static std::vector<Light*> CreateLight()
 	//}
 
 	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
-	Light* directional_light = Light::CreateDirectional(glm::vec3(0, 2, 0), glm::vec3(-1, -1, -1));
+	Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
 
 	lights.push_back(directional_light);
 	//lights.push_back(spot_light);
@@ -162,8 +162,8 @@ int main()
 	ShaderProgram* draw_normal_shader = new ShaderProgram("./Shader/draw_normal.vert", "./Shader/draw_normal.geo", "./Shader/SingleColor.frag");
 	ShaderProgram* phong_instance_shader = new ShaderProgram("./Shader/MVP_instance.vert", "./Shader/Blinn_Phong.frag");
 	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/Blinn_Phong.frag");
-	//ShaderProgram* depth_shader = new ShaderProgram("./Shader/SimpleDepthShader.vert", "./Shader/Empty.frag");
-	//ShaderProgram* depth_texture_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Depth.frag");
+	ShaderProgram* depth_shader = new ShaderProgram("./Shader/SimpleDepthShader.vert", "./Shader/Empty.frag");
+	ShaderProgram* depth_texture_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Depth.frag");
 
 	Material empty_material;
 
@@ -463,10 +463,9 @@ int main()
 	// 启用多重采样。在大多数OpenGL的驱动上，多重采样都是默认启用
 	glEnable(GL_MULTISAMPLE);
 
-
-#pragma region 深度贴图帧缓冲
 	Mesh frame_buffer_mesh(square_vertices, square_indices);
 
+#pragma region 深度贴图帧缓冲
 	FrameBuffer depth_map_buffer(1024, 1024);
 
 	TexParams depth_tex_params = {
@@ -477,11 +476,11 @@ int main()
 	};
 	// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
 	depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
+#pragma endregion
 
-	OrthoCamera shadow_camera(-10, 10, -10, 10, 0.1, 100);
+	OrthoCamera shadow_camera(-10, 10, -10, 10, 1, 7.5);
 	shadow_camera.position = lights[0]->position;
 	shadow_camera.UpdateFront(lights[0]->direction);
-#pragma endregion
 
 	bool use_box_outline = false;
 	bool active_skybox = false;
@@ -509,16 +508,14 @@ int main()
 		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
-
 		
-/*
 #pragma region 深度贴图
-		
 		depth_map_buffer.UpdateViewport();
 		depth_map_buffer.Bind();
-
+		// 绑定帧缓冲后要清除之前的缓存
+		glClear(GL_DEPTH_BUFFER_BIT);
 		depth_shader->Use();
-		depth_shader->Apply(shadow_camera);
+		depth_shader->SetUniformMat4f("lightSpaceMat", shadow_camera.GetProjection()* shadow_camera.GetView());
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		for (int i = 0; i < 10; i++)
@@ -535,9 +532,6 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		// 清除屏幕的颜色和缓冲
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 		// 将附加纹理作为贴图，渲染一个四边形
 		depth_texture_shader->Use();
@@ -545,8 +539,9 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
 		frame_buffer_mesh.Draw(*depth_texture_shader);
-		*/
 
+
+/*
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
@@ -612,7 +607,8 @@ int main()
 			}
 		}
 #pragma endregion
-
+*/
+/*
 #pragma region box 实例化渲染
 		phong_instance_shader->Use();
 		phong_instance_shader->Apply(*camera, true);
@@ -771,7 +767,7 @@ int main()
 			it->second->Draw(*blend_shader);
 		}
 #pragma endregion
-
+*/
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
 		// glfwPollEvents函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数
