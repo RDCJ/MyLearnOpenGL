@@ -60,7 +60,7 @@ class Camera
 		/// 用direction更新Front, 并更新Right和Up
 		/// </summary>
 		/// <param name="direction"></param>
-		void UpdateFront(glm::vec3& direction);
+		void UpdateFront(const glm::vec3& direction);
 		/// <summary>
 		/// 将view和projection填充到Uniform缓冲对象中
 		/// </summary>

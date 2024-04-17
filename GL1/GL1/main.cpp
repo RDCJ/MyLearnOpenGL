@@ -114,7 +114,7 @@ static std::vector<Light*> CreateLight()
 		light->diffuse = glm::vec3(1);
 		light->specular = glm::vec3(1);
 	}
-	directional_light->diffuse = glm::vec3(0.5);
+	directional_light->diffuse = glm::vec3(1);
 	return lights;
 	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
 }
@@ -164,11 +164,12 @@ int main()
 	ShaderProgram* phong_instance_array_shader = new ShaderProgram("./Shader/MVP_instance_array.vert", "./Shader/Blinn_Phong.frag");
 	ShaderProgram* depth_shader = new ShaderProgram("./Shader/SimpleDepthShader.vert", "./Shader/Empty.frag");
 	ShaderProgram* depth_texture_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Depth.frag");
+	ShaderProgram* phong_shadow_shader = new ShaderProgram("./Shader/MVP_Shadow.vert", "./Shader/Blinn_Phong_Shadow.frag");
 
 	Material empty_material;
 
-	camera = new OrthoCamera(-10, 10, -10, 10, 0.1, 100);
-	//camera = new PerspectiveCamera(45.0f, (float)ScreenWidth / ScreenHeight);
+	//camera = new OrthoCamera(-10, 10, -10, 10, 0.1, 100);
+	camera = new PerspectiveCamera(45.0f, (float)ScreenWidth / ScreenHeight);
 	fps_crtl = new FPSController(camera, window);
 	// 给camera创建一个uniform缓冲对象
 	camera->uniform_matrices.GenBuffer(2 * sizeof(glm::mat4), 0);
@@ -532,16 +533,16 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		glDisable(GL_DEPTH_TEST);
-		// 将附加纹理作为贴图，渲染一个四边形
-		depth_texture_shader->Use();
-		depth_texture_shader->SetUniformInt("tex", 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
-		frame_buffer_mesh.Draw(*depth_texture_shader);
+		//glDisable(GL_DEPTH_TEST);
+		//// 将附加纹理作为贴图，渲染一个四边形
+		//depth_texture_shader->Use();
+		//depth_texture_shader->SetUniformInt("tex", 0);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
+		//frame_buffer_mesh.Draw(*depth_texture_shader);
 
 
-/*
+
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
@@ -571,16 +572,22 @@ int main()
 			float angle = 29 * i;
 			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-			phong_shader->Use();
-			phong_shader->Apply(tf);
-			phong_shader->Apply(*camera, true);
-			phong_shader->Apply(lights);
-			phong_shader->SetUniformBool("use_cube_map", false);
-			phong_shader->SetUniformBool("use_blinn", use_blinn);
-			phong_shader->Apply(cube_material);
+			phong_shadow_shader->Use();
+			phong_shadow_shader->Apply(tf);
+			phong_shadow_shader->Apply(*camera, true);
+			phong_shadow_shader->Apply(lights);
+			phong_shadow_shader->SetUniformBool("use_cube_map", false);
+			phong_shadow_shader->SetUniformBool("use_blinn", use_blinn);
+			phong_shadow_shader->Apply(cube_material);
+			phong_shadow_shader->SetUniformMat4f("lightSpaceMat", shadow_camera.GetProjection() * shadow_camera.GetView());
+
+			phong_shadow_shader->SetUniformInt("shadow_map", 3);
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
+
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
-			cube_mesh.Draw(*phong_shader);
+			cube_mesh.Draw(*phong_shadow_shader);
 
 			if (use_box_outline)
 			{
@@ -607,7 +614,7 @@ int main()
 			}
 		}
 #pragma endregion
-*/
+
 /*
 #pragma region box 实例化渲染
 		phong_instance_shader->Use();

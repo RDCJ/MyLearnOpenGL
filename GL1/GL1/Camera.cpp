@@ -49,7 +49,7 @@ glm::mat4 Camera::GetView(const glm::vec3 &target)
 	return this->GetView();
 }
 
-inline void Camera::UpdateFront(glm::vec3& direction)
+inline void Camera::UpdateFront(const glm::vec3& direction)
 {
 	Front = glm::normalize(direction);
 
