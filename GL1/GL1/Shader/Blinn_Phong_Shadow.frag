@@ -63,7 +63,7 @@ uniform sampler2D shadow_map;
 uniform Light lights[LIGHT_MAX_NUM];
 
 // 计算阴影的强度
-float CalcShadow()
+float CalcShadow(vec3 lightDir, vec3 normal)
 {
     // 透视除法, 将裁切空间坐标的范围-w到w转为-1到1
     vec3 projection_coord = FragPosLightSpace.xyz / FragPosLightSpace.w;
@@ -77,7 +77,9 @@ float CalcShadow()
 
     float currentDepth = projection_coord.z;
     
-    return currentDepth > cloestDepth ? 1.0 : 0.0;
+    // float bias = 0.005;
+    float bias = max(0.05 * (1 - dot(normal, lightDir)), 0.005);
+    return currentDepth - bias > cloestDepth ? 1.0 : 0.0;
 }
 
 
@@ -142,7 +144,7 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     //vec3 emission = vec3(texture(material.emission, TexCoord));
 
     // 计算阴影
-    float shadow = CalcShadow();
+    float shadow = CalcShadow(lightDir, normal);
     
     // diffuse和specular乘以(1-shadow)，这表示这个片段有多大成分不在阴影中
     return attenuation * (ambient + spot_intensity * (1 - shadow) * (diffuse + specular));// + emission;
