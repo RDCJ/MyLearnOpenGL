@@ -17,6 +17,11 @@ class Texture
 		/// °ó¶¨
 		/// </summary>
 		void Bind();
+		/// <summary>
+		/// ½â°ó
+		/// </summary>
+		void Unbind();
+
 	private:
 	protected:
 		unsigned int ID = 0;

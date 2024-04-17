@@ -20,3 +20,8 @@ void Texture::Bind()
 {
 	glBindTexture(GLTarget(), ID);
 }
+
+void Texture::Unbind()
+{
+	glBindTexture(GLTarget(), 0);
+}

@@ -472,11 +472,18 @@ int main()
 	TexParams depth_tex_params = {
 		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
 		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
-		{GL_TEXTURE_WRAP_S, GL_REPEAT},
-		{GL_TEXTURE_WRAP_T, GL_REPEAT}
+		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
+		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER}
 	};
+
+
 	// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
 	depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
+	// 让所有超出深度贴图的坐标的深度范围是1.0，这样超出的坐标将永远不在阴影之中
+	depth_map_buffer.color_buffer->Bind();
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	depth_map_buffer.color_buffer->Unbind();
 #pragma endregion
 
 	OrthoCamera shadow_camera(-10, 10, -10, 10, 1, 7.5);

@@ -72,6 +72,11 @@ float CalcShadow(vec3 lightDir, vec3 normal)
     // 为了作为从深度贴图中采样的坐标，xy分量也需要变换到[0,1]。
     // 所以整个projection_coord向量都需要变换到[0,1]范围
     projection_coord = projection_coord * 0.5 + 0.5;
+
+    // 当一个点比光的远平面还要远时，它的投影坐标的z坐标会大于1.0，导致远处的物体总是有阴影
+    // 解决：只要投影向量的z坐标大于1.0，就把shadow的值强制设为0.0
+    if (projection_coord.z > 1.0) return 0;
+
     // 计算光的位置视野下最近的深度
     float cloestDepth = texture(shadow_map, projection_coord.xy).r;
 
