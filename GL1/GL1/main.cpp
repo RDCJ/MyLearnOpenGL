@@ -89,23 +89,23 @@ void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 static std::vector<Light*> CreateLight()
 {
 	glm::vec3 pointLightPositions[] = {
-		glm::vec3(1.0f,  0.2f,  2.0f),
+		glm::vec3(0.0f,  0.0f,  2.0f),
 		glm::vec3(2.3f, -3.3f, -4.0f),
 		glm::vec3(-4.0f,  2.0f, -12.0f),
 		glm::vec3(0.0f,  0.0f, -3.0f)
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
-	//for (int i = 0; i < 4; i++)
-	//{
-	//	Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
-	//	lights.push_back(light);
-	//}
+	for (int i = 0; i < 1; i++)
+	{
+		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
+		lights.push_back(light);
+	}
 
 	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
 	Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
 
-	lights.push_back(directional_light);
+	//lights.push_back(directional_light);
 	//lights.push_back(spot_light);
 
 	for (Light* light : lights)
@@ -165,6 +165,9 @@ int main()
 	ShaderProgram* depth_shader = new ShaderProgram("./Shader/SimpleDepthShader.vert", "./Shader/Empty.frag");
 	ShaderProgram* depth_texture_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Depth.frag");
 	ShaderProgram* phong_shadow_shader = new ShaderProgram("./Shader/MVP_Shadow.vert", "./Shader/Blinn_Phong_Shadow.frag");
+	ShaderProgram* cube_map_depth_shader = new ShaderProgram("./Shader/ToWorldPosition.vert", "./Shader/ToSixLightSpace.geo", "./Shader/CalcDepth.frag");
+	ShaderProgram* phong_cube_map_shadow_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/Blinn_Phong_CubeMap_Shadow.frag");
+	ShaderProgram* skybox_depth_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox_depth.frag");
 
 	Material empty_material;
 
@@ -472,30 +475,45 @@ int main()
 	TexParams depth_tex_params = {
 		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
 		{GL_TEXTURE_MAG_FILTER, GL_NEAREST},
-		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
-		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER}
+		{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
+		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
+		{GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}
 	};
 
-
 	// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
-	depth_map_buffer.AddTexture(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
-	// 让所有超出深度贴图的坐标的深度范围是1.0，这样超出的坐标将永远不在阴影之中
-	depth_map_buffer.color_buffer->Bind();
-	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	depth_map_buffer.color_buffer->Unbind();
-#pragma endregion
+	depth_map_buffer.AddTextureCubMap(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
 
-	OrthoCamera shadow_camera(-10, 10, -10, 10, 1, 7.5);
+#pragma endregion
+	PerspectiveCamera shadow_camera(90, ScreenWidth / (float)ScreenHeight, 0.1f, 25.0f);
 	shadow_camera.position = lights[0]->position;
-	shadow_camera.UpdateFront(lights[0]->direction);
+	std::vector<glm::vec3> six_dir = {
+		glm::vec3(1.0,0.0,0.0),
+		glm::vec3(-1.0,0.0,0.0),
+		glm::vec3(0.0,1.0,0.0),
+		glm::vec3(0.0,-1.0,0.0),
+		glm::vec3(0.0,0.0,1.0),
+		glm::vec3(0.0,0.0,-1.0)
+	};
+
+	std::vector<glm::vec3> six_up = {
+		glm::vec3(0.0,-1.0,0.0),
+		glm::vec3(0.0,-1.0,0.0),
+		glm::vec3(0.0,0.0,1.0),
+		glm::vec3(0.0,0.0,-1.0),
+		glm::vec3(0.0,-1.0,0.0),
+		glm::vec3(0.0,-1.0,0.0)
+	};
+
+	skybox_material.cube_map = depth_map_buffer.cube_map_buffer;
 
 	bool use_box_outline = false;
-	bool active_skybox = false;
+	bool active_skybox = true;
 	bool use_explode = false;
 	bool draw_normal = false;
 	bool rock_move = true;
 	bool use_blinn = true;
+
+	bool light_follow_camera = false;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -506,6 +524,14 @@ int main()
 
 		ProcessInput(window);
 		fps_crtl->Update();
+		if (glfwGetKey(window, GLFW_KEY_RIGHT_ALT))
+			light_follow_camera = ! light_follow_camera;
+		if (light_follow_camera)
+		{
+			lights[0]->position = camera->position;
+			shadow_camera.position = lights[0]->position;
+		}
+	
 		camera->FillUniformMatrices();
 
 		glEnable(GL_DEPTH_TEST);
@@ -522,20 +548,23 @@ int main()
 		depth_map_buffer.UpdateViewport();
 		depth_map_buffer.Bind();
 		// 绑定帧缓冲后要清除之前的缓存
-		glClear(GL_DEPTH_BUFFER_BIT);
-		depth_shader->Use();
-		depth_shader->SetUniformMat4f("lightSpaceMat", shadow_camera.GetProjection()* shadow_camera.GetView());
-		depth_shader->SetUniformFloat("z_near", shadow_camera.Z_Near);
-		depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
-		glDrawBuffer(GL_NONE);
-		glReadBuffer(GL_NONE);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		cube_map_depth_shader->Use();
+		for (int i = 0; i < 6; i++)
+		{
+			shadow_camera.Front = six_dir[i];
+			shadow_camera.Up = six_up[i];
+			cube_map_depth_shader->SetUniformMat4f("lightSpaceMat[" + std::to_string(i) + "]", shadow_camera.GetProjection() * shadow_camera.GetView());
+		}
+		cube_map_depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
+		cube_map_depth_shader->SetUniformVec3("light_pos", lights[0]->position);
 		for (int i = 0; i < 10; i++)
 		{
-			glEnable(GL_DEPTH_TEST);
 			float angle = 29 * i;
 			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
-			depth_shader->Apply(tf);
-			cube_mesh.Draw(*depth_shader);
+			cube_map_depth_shader->Apply(tf);
+			cube_mesh.Draw(*cube_map_depth_shader);
 		}
 #pragma endregion
 
@@ -546,6 +575,7 @@ int main()
 
 		glCullFace(GL_BACK);
 #pragma region box
+		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
@@ -574,22 +604,22 @@ int main()
 			float angle = 29 * i;
 			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
-			phong_shadow_shader->Use();
-			phong_shadow_shader->Apply(tf);
-			phong_shadow_shader->Apply(*camera, true);
-			phong_shadow_shader->Apply(lights);
-			phong_shadow_shader->SetUniformBool("use_cube_map", false);
-			phong_shadow_shader->SetUniformBool("use_blinn", use_blinn);
-			phong_shadow_shader->Apply(cube_material);
-			phong_shadow_shader->SetUniformMat4f("lightSpaceMat", shadow_camera.GetProjection() * shadow_camera.GetView());
+			phong_cube_map_shadow_shader->Use();
+			phong_cube_map_shadow_shader->Apply(tf);
+			phong_cube_map_shadow_shader->Apply(*camera, true);
+			phong_cube_map_shadow_shader->Apply(lights);
+			phong_cube_map_shadow_shader->SetUniformBool("use_cube_map", false);
+			phong_cube_map_shadow_shader->SetUniformBool("use_blinn", use_blinn);
+			phong_cube_map_shadow_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
+			phong_cube_map_shadow_shader->Apply(cube_material);
 
-			phong_shadow_shader->SetUniformInt("shadow_map", 3);
+			phong_cube_map_shadow_shader->SetUniformInt("cube_map_shadow", 3);
 			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, depth_map_buffer.color_buffer->GetID());
+			depth_map_buffer.cube_map_buffer->Bind();
 
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
-			cube_mesh.Draw(*phong_shadow_shader);
+			cube_mesh.Draw(*phong_cube_map_shadow_shader);
 
 			if (use_box_outline)
 			{
@@ -671,6 +701,7 @@ int main()
 			}
 		}
 #pragma endregion
+*/
 
 #pragma region  light box
 		for (int i = 0; i < lights.size(); i++)
@@ -681,7 +712,7 @@ int main()
 			light_shaderProgram->Apply(*camera, true);
 			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
 
-			transform = Transform(light->position, glm::vec3(0.2f));
+			Transform transform = Transform(light->position, glm::vec3(0.1f));
 			light_shaderProgram->Apply(transform);
 			light_shaderProgram->Apply(empty_material);
 
@@ -689,6 +720,7 @@ int main()
 		}
 #pragma endregion
 
+		/*
 #pragma region planet
 		phong_shader->Use();
 		phong_shader->Apply(*camera, true);
@@ -731,22 +763,36 @@ int main()
 				rock.Draw(*phong_shader);
 			}
 		}
-#pragma endregion
+#pragma endregion */
 
 #pragma region skybox
+		//if (active_skybox)
+		//{
+		//	// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
+		//	// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
+		//	glDepthFunc(GL_LEQUAL);
+		//	skybox_shader->Use();
+		//	skybox_shader->Apply(*camera, false, true);
+		//	skybox_shader->Apply(skybox_material);
+		//	skybox_mesh.Draw(*skybox_shader);
+		//	glDepthFunc(GL_LESS);
+		//}
+
 		if (active_skybox)
 		{
 			// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
 			// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
 			glDepthFunc(GL_LEQUAL);
-			skybox_shader->Use();
-			skybox_shader->Apply(*camera, false, true);
-			skybox_shader->Apply(skybox_material);
-			skybox_mesh.Draw(*skybox_shader);
+			skybox_depth_shader->Use();
+			skybox_depth_shader->Apply(*camera, false, true);
+			skybox_depth_shader->Apply(skybox_material);
+			skybox_depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
+			skybox_depth_shader->SetUniformFloat("z_near", shadow_camera.Z_Near);
+			skybox_mesh.Draw(*skybox_depth_shader);
 			glDepthFunc(GL_LESS);
 		}
 #pragma endregion
-
+		/*
 #pragma region 带透明度的物体
 		glDisable(GL_CULL_FACE);
 		std::vector<Object> objs(3);

@@ -5,12 +5,14 @@
 
 #include <glad/glad.h>
 #include "Texture2D.h"
+#include "TextureCubeMap.h"
 
 class FrameBuffer
 {
 	public:
 		FrameBuffer(int buffer_width, int buffer_height);
-		void AddTexture(GLenum format, GLenum data_type, int mipmap_level= 0, const TexParams& params=TexParams());
+		void AddTexture2D(GLenum format, GLenum data_type, int mipmap_level= 0, const TexParams& params=TexParams());
+		void AddTextureCubMap(GLenum format, GLenum data_type, int mipmap_level = 0, const TexParams& params = TexParams());
 		void AddRenderBuffer();
 		/// <summary>
 		/// 用帧缓冲的大小更新Viewport
@@ -25,6 +27,7 @@ class FrameBuffer
 		int buffer_height;
 
 		Texture2D* color_buffer = nullptr;
+		TextureCubeMap* cube_map_buffer = nullptr;
 
 	private:
 		unsigned int ID;

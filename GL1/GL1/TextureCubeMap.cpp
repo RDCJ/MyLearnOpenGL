@@ -18,12 +18,22 @@ TextureCubeMap::TextureCubeMap(std::vector<std::string>& img_paths)
 		if (img_data)
 		{
 			ToGL(width, height, nrChannels, img_data, i);
-			SetDefaultParameters();
 		}
 		else
 			std::cout << "Texture failed to load at path: " << img_paths[i] << std::endl;
 
 		stbi_image_free(img_data);
+	}
+	SetDefaultParameters();
+}
+
+TextureCubeMap::TextureCubeMap(int width, int height, GLenum format, void* data, GLenum data_type)
+{
+	glGenTextures(1, &ID);
+	Bind();
+	for (int i = 0; i < 6; i++)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, data_type, data);
 	}
 }
 
