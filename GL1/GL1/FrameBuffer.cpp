@@ -66,11 +66,9 @@ void FrameBuffer::AddRenderBuffer()
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// 将渲染缓冲对象附加到帧缓冲上
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-	// 检查帧缓冲是否是完整的，如果不是，将打印错误信息。
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	}
+	
+	CheckStatus();
+
 	// 解绑帧缓冲
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -79,4 +77,12 @@ void FrameBuffer::Bind()
 {
 	// glBindFramebuffer: 绑定帧缓冲, 绑定到GL_FRAMEBUFFER目标之后，所有的读取和写入帧缓冲的操作将会影响当前绑定的帧缓冲
 	glBindFramebuffer(GL_FRAMEBUFFER, ID);
+}
+
+void FrameBuffer::CheckStatus()
+{
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	}
 }

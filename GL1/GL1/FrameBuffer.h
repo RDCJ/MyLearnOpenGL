@@ -22,6 +22,10 @@ class FrameBuffer
 			glViewport(0, 0, buffer_width, buffer_height);
 		}
 		void Bind();
+		/// <summary>
+		/// 检查帧缓冲是否是完整的，如果不是，将打印错误信息。
+		/// </summary>
+		void CheckStatus();
 
 		int buffer_width;
 		int buffer_height;
