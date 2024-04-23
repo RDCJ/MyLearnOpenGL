@@ -507,8 +507,6 @@ int main()
 		glm::vec3(0.0, -1.0, 0.0)
 	};
 
-	skybox_material.cube_map = depth_map_buffer.cube_map_buffer;
-
 	bool use_box_outline = false;
 	bool active_skybox = true;
 	bool use_explode = false;
@@ -578,7 +576,6 @@ int main()
 
 		glCullFace(GL_BACK);
 #pragma region box
-		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			// glEnable和glDisable函数允许我们启用或禁用某个OpenGL功能。这个功能会一直保持启用/禁用状态，直到另一个调用来禁用/启用它
@@ -769,30 +766,17 @@ int main()
 #pragma endregion */
 
 #pragma region skybox
-		//if (active_skybox)
-		//{
-		//	// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
-		//	// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
-		//	glDepthFunc(GL_LEQUAL);
-		//	skybox_shader->Use();
-		//	skybox_shader->Apply(*camera, false, true);
-		//	skybox_shader->Apply(skybox_material);
-		//	skybox_mesh.Draw(*skybox_shader);
-		//	glDepthFunc(GL_LESS);
-		//}
-
 		if (active_skybox)
 		{
 			// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
 			// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
 			glDepthFunc(GL_LEQUAL);
-			skybox_depth_shader->Use();
-			skybox_depth_shader->Apply(*camera, false, true);
-			skybox_depth_shader->Apply(skybox_material);
-			skybox_depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
-			skybox_depth_shader->SetUniformFloat("z_near", shadow_camera.Z_Near);
-			skybox_mesh.Draw(*skybox_depth_shader);
+			skybox_shader->Use();
+			skybox_shader->Apply(*camera, false, true);
+			skybox_shader->Apply(skybox_material);
+			skybox_mesh.Draw(*skybox_shader);
 			glDepthFunc(GL_LESS);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 		}
 #pragma endregion
 		/*
