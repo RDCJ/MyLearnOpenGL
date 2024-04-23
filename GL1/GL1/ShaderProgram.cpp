@@ -145,6 +145,7 @@ void ShaderProgram::Apply(Material& material)
 	for (int i = 0; i < material.textures.size(); i++)
 	{
 		std::string& type = material.textures[i].type;
+		this->SetUniformBool("use_normal_map", type == "texture_normal");
 		unsigned int idx = texture_count[type];
 		// 纹理命名规则：material.texture_{type}{idx}
 		this->SetUniformInt("material." + type + std::to_string(idx), i + 1);

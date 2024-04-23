@@ -110,7 +110,7 @@ static std::vector<Light*> CreateLight()
 
 	for (Light* light : lights)
 	{
-		light->ambient = glm::vec3(0.2f);
+		light->ambient = glm::vec3(0.4f);
 		light->diffuse = glm::vec3(1);
 		light->specular = glm::vec3(1);
 	}
@@ -183,10 +183,10 @@ int main()
 
 	std::vector<Vertex> square_vertices
 	{
-		Vertex {glm::vec3(-1, -1, 0), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
-		Vertex {glm::vec3(1, -1, 0), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
-		Vertex {glm::vec3(1, 1, 0), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
-		Vertex {glm::vec3(-1, 1, 0), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
+		Vertex {glm::vec3(-1, -1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)},
+		Vertex {glm::vec3(1, -1, 0), glm::vec3(0, 0, 1), glm::vec2(1, 0)},
+		Vertex {glm::vec3(1, 1, 0), glm::vec3(0, 0, 1), glm::vec2(1, 1)},
+		Vertex {glm::vec3(-1, 1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 1)},
 	};
 	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
 
@@ -443,6 +443,19 @@ int main()
 	}
 #pragma endregion
 
+#pragma region brick wall
+	Texture2D wall_diffuse("Image/brickwall.jpg", "texture_diffuse");
+	wall_diffuse.GenerateMipmap();
+	Texture2D wall_specular("Image/brickwall_specular.jpg", "texture_specular");
+	wall_specular.GenerateMipmap();
+	Texture2D wall_normal("Image/brickwall_normal.jpg", "texture_normal");
+	wall_normal.GenerateMipmap();
+	Material wall_material(std::vector<Texture2D>{wall_diffuse, wall_specular }, 0.4f * 128, 0);
+	Material wall_material_with_normal(std::vector<Texture2D>{wall_diffuse, wall_specular, wall_normal }, 0.4f * 128, 0);
+	Mesh wall_mesh(square_vertices, square_indices);
+#pragma endregion
+
+
 	Time::Init();
 	
 	auto lights = CreateLight();
@@ -545,6 +558,7 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
 #pragma region 深度贴图
+		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 		depth_map_buffer.UpdateViewport();
 		depth_map_buffer.Bind();
@@ -645,6 +659,27 @@ int main()
 				glDisable(GL_STENCIL_TEST);
 			}
 		}
+#pragma endregion
+
+#pragma region brickwall
+		glDisable(GL_CULL_FACE);
+		phong_shader->Use();
+		phong_shader->Apply(*camera, true, false);
+		phong_shader->Apply(lights);
+		phong_shader->SetUniformBool("use_cube_map", false);
+		phong_shader->SetUniformBool("use_blinn", use_blinn);
+		Transform wall_tf;
+
+		// 不使用法线贴图
+		phong_shader->Apply(wall_material);
+		wall_tf.position = glm::vec3(5, 0, -2);
+		phong_shader->Apply(wall_tf);
+		wall_mesh.Draw(*phong_shader);
+		// 使用法线贴图
+		phong_shader->Apply(wall_material_with_normal);
+		wall_tf.position = glm::vec3(5, 2.5, -2);
+		phong_shader->Apply(wall_tf);
+		wall_mesh.Draw(*phong_shader);
 #pragma endregion
 
 /*
