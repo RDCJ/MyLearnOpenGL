@@ -470,7 +470,8 @@ int main()
 	Mesh frame_buffer_mesh(square_vertices, square_indices);
 
 #pragma region Éî¶ÈÌùÍ¼Ö¡»º³å
-	FrameBuffer depth_map_buffer(1024, 1024);
+	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	FrameBuffer depth_map_buffer(SHADOW_WIDTH, SHADOW_HEIGHT);
 
 	TexParams depth_tex_params = {
 		{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
@@ -484,9 +485,9 @@ int main()
 	depth_map_buffer.AddTextureCubMap(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
 
 	depth_map_buffer.CheckStatus();
-
 #pragma endregion
-	PerspectiveCamera shadow_camera(90, ScreenWidth / (float)ScreenHeight, 0.1f, 25.0f);
+
+	PerspectiveCamera shadow_camera(90, SHADOW_WIDTH / (float)SHADOW_HEIGHT, 0.1f, 25.0f);
 	shadow_camera.position = lights[0]->position;
 	std::vector<glm::vec3> six_dir = {
 		glm::vec3(1.0, 0.0, 0.0),
@@ -561,7 +562,7 @@ int main()
 		}
 		cube_map_depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
 		cube_map_depth_shader->SetUniformVec3("light_pos", lights[0]->position);
-		for (int i = 0; i < 1; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			float angle = 29 * i;
 			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
