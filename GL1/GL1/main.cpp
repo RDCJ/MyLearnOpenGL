@@ -525,8 +525,8 @@ int main()
 
 		ProcessInput(window);
 		fps_crtl->Update();
-		if (glfwGetKey(window, GLFW_KEY_RIGHT_ALT))
-			light_follow_camera = ! light_follow_camera;
+		light_follow_camera = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+			//light_follow_camera = ! light_follow_camera;
 		if (light_follow_camera)
 		{
 			lights[0]->position = camera->position;

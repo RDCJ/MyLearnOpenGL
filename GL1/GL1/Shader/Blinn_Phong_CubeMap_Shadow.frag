@@ -63,20 +63,36 @@ uniform samplerCube cube_map_shadow;
 #define LIGHT_MAX_NUM 1
 uniform Light lights[LIGHT_MAX_NUM];
 
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+);
+
 // 计算阴影的强度
 float CalcShadow(vec3 lightDir, vec3 light_pos, vec3 normal)
 {
-    // 获取立方体贴图中存储的深度
-    // 计算fragment的位置与光的位置之间的差向量，使用这个向量作为一个方向向量去对立方体贴图进行采样
-    float cloestDepth = texture(cube_map_shadow, FragPos - light_pos).r;
-    // closest_depth在0到1的范围，所以我们先将其转换回0到z_far的范围
-    cloestDepth *= z_far;
+    vec3 frag2light = FragPos - light_pos;
     // 获取当前fragment和光源之间的深度值
-    float currentDepth = length(FragPos - light_pos);
-
-    float bias = 0.05;
-    return currentDepth - bias > cloestDepth ? 1.0: 0.0;
-
+    float currentDepth = length(frag2light);
+    float shadow = 0;
+    float bias = max(0.05 * (1 - dot(normal, lightDir)), 0.005);
+    // 根据观察者的距离来增加偏移半径，当距离更远的时候阴影更柔和，更近了就更锐利
+    float diskRadius = (1.0 + (currentDepth / z_far)) / 25.0;
+    // 对fragment位置周围过滤多个样本，并对结果平均化
+    for (int i=0; i<20; i++)
+    {
+        // 获取立方体贴图中存储的深度
+        // 计算fragment的位置与光的位置之间的差向量，使用这个向量作为一个方向向量去对立方体贴图进行采样
+        float cloestDepth = texture(cube_map_shadow, frag2light + sampleOffsetDirections[i] * diskRadius).r;
+        // closest_depth在0到1的范围，所以我们先将其转换回0到z_far的范围
+        cloestDepth *= z_far;
+        shadow += currentDepth - bias > cloestDepth ? 1.0: 0.0;
+    }
+    return shadow / 20.0;
 }
 
 
