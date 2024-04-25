@@ -181,6 +181,15 @@ int main()
 	for (int i = 0; i < nanosuit.materials.size(); i++)
 		nanosuit.materials[i].shininess = 0.4f * 128;
 
+	std::vector<glm::vec3> square_position{
+		glm::vec3(-1, -1, 0), glm::vec3(1, -1, 0), glm::vec3(1, 1, 0), glm::vec3(-1, 1, 0)
+	};
+	std::vector<glm::vec3> square_normal{
+		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1)
+	};
+	std::vector<glm::vec2> square_texcoords{
+		glm::vec2(0, 0), glm::vec2(1, 0), glm::vec2(1, 1), glm::vec2(0, 1)
+	};
 	std::vector<Vertex> square_vertices
 	{
 		Vertex {glm::vec3(-1, -1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)},
@@ -452,7 +461,7 @@ int main()
 	wall_normal.GenerateMipmap();
 	Material wall_material(std::vector<Texture2D>{wall_diffuse, wall_specular }, 0.4f * 128, 0);
 	Material wall_material_with_normal(std::vector<Texture2D>{wall_diffuse, wall_specular, wall_normal }, 0.4f * 128, 0);
-	Mesh wall_mesh(square_vertices, square_indices);
+	Mesh wall_mesh(square_position, square_indices, &square_normal, &square_texcoords);
 #pragma endregion
 
 
@@ -678,6 +687,8 @@ int main()
 		// 使用法线贴图
 		phong_shader->Apply(wall_material_with_normal);
 		wall_tf.position = glm::vec3(5, 2.5, -2);
+		wall_tf.rotate_axis = glm::vec3(1, 0, 0);
+		wall_tf.rotate_angle = -90;
 		phong_shader->Apply(wall_tf);
 		wall_mesh.Draw(*phong_shader);
 #pragma endregion

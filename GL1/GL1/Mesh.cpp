@@ -10,6 +10,19 @@ Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices)
 	SetupMesh();
 }
 
+Mesh::Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices, std::vector<glm::vec3>* Normal, 
+					std::vector<glm::vec2>* TexCoords, std::vector<glm::vec3>* Tangent, std::vector<glm::vec3>* Bitangent)
+{
+	this->Position = Position;
+	this->indices = _indices;
+	if (Normal != nullptr) this->Normal = *Normal;
+	if (TexCoords != nullptr) this->TexCoords = *TexCoords;
+	if (Tangent != nullptr) this->Tangent = *Tangent;
+	if (Bitangent != nullptr) this->Bitangent = *Bitangent;
+
+	SetupMeshBatchedVertex();
+}
+
 void Mesh::SetInstanceMat4(int location)
 {
 	glBindVertexArray(VAO);
@@ -96,6 +109,37 @@ void Mesh::SetupMesh()
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+
+	glBindVertexArray(0);
+}
+
+void Mesh::SetupMeshBatchedVertex()
+{
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+#pragma region 配置VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// 调用glBufferSubData之前必须要先调用glBufferData, 预留特定大小的内存
+	size_t size_need = Utils::MemorySize(Position) + Utils::MemorySize(Normal) +
+								  Utils::MemorySize(TexCoords) + Utils::MemorySize(Tangent) + Utils::MemorySize(Bitangent);
+	glBufferData(GL_ARRAY_BUFFER, size_need, NULL, GL_STATIC_DRAW);
+	// 传输顶点数据
+	int offset = 0;
+	BufferSubData(Position, 0, offset);
+	BufferSubData(Normal, 1, offset);
+	BufferSubData(TexCoords, 2, offset);
+	BufferSubData(Tangent, 3, offset);
+	BufferSubData(Bitangent, 4, offset);
+#pragma endregion
+
+#pragma region 配置EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &indices[0], GL_STATIC_DRAW);
+#pragma endregion
 
 	glBindVertexArray(0);
 }

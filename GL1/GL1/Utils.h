@@ -28,6 +28,12 @@ public:
 	
 	static int RandomInt(int a, int b);
 	static float RandomFloat(float a, float b);
+
+	template <typename T>
+	static size_t MemorySize(const std::vector<T>& v)
+	{
+		return v.size() * sizeof(T);
+	}
 };
 
 
