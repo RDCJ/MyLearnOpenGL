@@ -53,3 +53,19 @@ float Utils::RandomFloat(float a, float b)
 	return a + randomFraction * (b - a);
 }
 
+std::tuple<glm::vec3, glm::vec3> Utils::CalcTBN(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3)
+{
+	glm::vec3 e1 = pos2 - pos1;
+	glm::vec3 e2 = pos3 - pos1;
+	glm::vec2 duv1 = uv2 - uv1;
+	glm::vec2 duv2 = uv3 - uv1;
+
+	float k = 1.0 / (duv1.x * duv2.y - duv2.x * duv1.y);
+	glm::mat2x2 UV(duv2.y, -duv2.x, -duv1.y, duv1.x);
+	glm::mat3x2 E = glm::transpose(glm::mat2x3(e1, e2));
+
+	glm::mat2x3 TB = k * UV * E;
+
+	return std::tuple<glm::vec3, glm::vec3>(glm::normalize(TB[0]), glm::normalize(TB[1]));
+}
+

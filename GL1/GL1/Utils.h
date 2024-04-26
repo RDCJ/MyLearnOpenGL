@@ -34,6 +34,19 @@ public:
 	{
 		return v.size() * sizeof(T);
 	}
+
+	/// <summary>
+	/// 计算pos1的切线空间，pos2和pos3的顺序不影响结果
+	/// </summary>
+	/// <param name="pos1"></param>
+	/// <param name="pos2"></param>
+	/// <param name="pos3"></param>
+	/// <param name="uv1"></param>
+	/// <param name="uv2"></param>
+	/// <param name="uv3"></param>
+	/// <returns></returns>
+	static std::tuple<glm::vec3, glm::vec3> CalcTBN(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3,
+		glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3);
 };
 
 

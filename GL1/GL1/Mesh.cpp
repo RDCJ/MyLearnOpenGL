@@ -23,6 +23,55 @@ Mesh::Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices
 	SetupMeshBatchedVertex();
 }
 
+Mesh::Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices,
+					std::vector<glm::vec3>* Normal, std::vector<glm::vec2>* TexCoords, bool calc_TBN)
+{
+	this->Position = Position;
+	this->indices = _indices;
+	if (Normal != nullptr) this->Normal = *Normal;
+	if (TexCoords != nullptr) this->TexCoords = *TexCoords;
+
+	if (calc_TBN)
+	{
+		int vertex_amount = this->Position.size();
+		int triangle_amount = this->indices.size() / 3;
+
+		this->Tangent = std::vector<glm::vec3>(vertex_amount, glm::vec3(0));
+		this->Bitangent = std::vector<glm::vec3>(vertex_amount, glm::vec3(0));
+		std::vector<unsigned int> vertex_count(vertex_amount, 0);
+		
+		for (int i = 0; i < triangle_amount; i++)
+		{
+			int idx1 = this->indices[i * 3], idx2 = this->indices[i * 3 + 1], idx3 = this->indices[i * 3 + 2];
+
+			auto TB = Utils::CalcTBN(this->Position[idx1], this->Position[idx2], this->Position[idx3],
+				this->TexCoords[idx1], this->TexCoords[idx2], this->TexCoords[idx3]);
+			this->Tangent[idx1] += std::get<0>(TB);
+			this->Bitangent[idx1] += std::get<1>(TB);
+
+			TB = Utils::CalcTBN(this->Position[idx2], this->Position[idx1], this->Position[idx3],
+				this->TexCoords[idx2], this->TexCoords[idx1], this->TexCoords[idx3]);
+			this->Tangent[idx2] += std::get<0>(TB);
+			this->Bitangent[idx2] += std::get<1>(TB);
+
+			TB = Utils::CalcTBN(this->Position[idx3], this->Position[idx2], this->Position[idx1],
+				this->TexCoords[idx3], this->TexCoords[idx2], this->TexCoords[idx1]);
+			this->Tangent[idx3] += std::get<0>(TB);
+			this->Bitangent[idx3] += std::get<1>(TB);
+
+			vertex_count[idx1]++;
+			vertex_count[idx2]++;
+			vertex_count[idx3]++;
+		}
+		// 将每个顶点切线/副切线平均化，以获得更加柔和的效果
+		for (int i = 0; i < vertex_amount; i++)
+		{
+			this->Tangent[i] /= vertex_count[i];
+			this->Bitangent[i] /= vertex_count[i];
+		}
+	}
+}
+
 void Mesh::SetInstanceMat4(int location)
 {
 	glBindVertexArray(VAO);
@@ -142,4 +191,32 @@ void Mesh::SetupMeshBatchedVertex()
 #pragma endregion
 
 	glBindVertexArray(0);
+}
+
+inline void Mesh::BufferSubData(std::vector<glm::vec3>& vertex_data, int layout, int& offset)
+{
+	if (vertex_data.size() > 0)
+	{
+		const int vec_len = 3;
+		const size_t vec_size = sizeof(*vertex_data.data());
+		const size_t data_size = vertex_data.size() * vec_size;
+		glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, vertex_data.data());
+		glEnableVertexAttribArray(layout);
+		glVertexAttribPointer(layout, vec_len, GL_FLOAT, GL_FALSE, vec_size, (void*)offset);
+		offset += data_size;
+	}
+}
+
+inline void Mesh::BufferSubData(std::vector<glm::vec2>& vertex_data, int layout, int& offset)
+{
+	if (vertex_data.size() > 0)
+	{
+		const int vec_len = 2;
+		const size_t vec_size = sizeof(*vertex_data.data());
+		const size_t data_size = vertex_data.size() * vec_size;
+		glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, vertex_data.data());
+		glEnableVertexAttribArray(layout);
+		glVertexAttribPointer(layout, vec_len, GL_FLOAT, GL_FALSE, vec_size, (void*)offset);
+		offset += data_size;
+	}
 }

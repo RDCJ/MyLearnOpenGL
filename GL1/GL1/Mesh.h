@@ -50,6 +50,17 @@ class Mesh : public IDrawable
 		Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices,
 			std::vector<glm::vec3>* Normal = nullptr, std::vector<glm::vec2>* TexCoords = nullptr,
 			std::vector<glm::vec3>* Tangent = nullptr, std::vector<glm::vec3>* Bitangent = nullptr);
+		/// <summary>
+		/// 顶点数据分批布局
+		/// </summary>
+		/// <param name="Position"></param>
+		/// <param name="_indices"></param>
+		/// <param name="Normal">optional</param>
+		/// <param name="TexCoords">optional</param>
+		/// <param name="calc_TBN">是否计算出TBN</param>
+		Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices,
+			std::vector<glm::vec3>* Normal = nullptr, std::vector<glm::vec2>* TexCoords = nullptr,
+			bool calc_TBN=false);
 
 		void SetInstanceMat4(int location);
 
@@ -73,19 +84,7 @@ class Mesh : public IDrawable
 		/// <param name="vertex_data"></param>
 		/// <param name="layout"></param>
 		/// <param name="offset"></param>
-		static void BufferSubData(std::vector<glm::vec3>& vertex_data, int layout, int& offset)
-		{
-			if (vertex_data.size() > 0)
-			{
-				const int vec_len = 3;
-				const size_t vec_size = sizeof(*vertex_data.data());
-				const size_t data_size = vertex_data.size() * vec_size;
-				glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, vertex_data.data());
-				glEnableVertexAttribArray(layout);
-				glVertexAttribPointer(layout, vec_len, GL_FLOAT, GL_FALSE, vec_size, (void*)offset);
-				offset += data_size;
-			}
-		}
+		static void BufferSubData(std::vector<glm::vec3>& vertex_data, int layout, int& offset);
 
 		/// <summary>
 		/// 绑定一个glm::vec2类型的批量顶点属性
@@ -93,19 +92,8 @@ class Mesh : public IDrawable
 		/// <param name="vertex_data"></param>
 		/// <param name="layout"></param>
 		/// <param name="offset"></param>
-		static void BufferSubData(std::vector<glm::vec2>& vertex_data, int layout, int& offset)
-		{
-			if (vertex_data.size() > 0)
-			{
-				const int vec_len = 2;
-				const size_t vec_size = sizeof(*vertex_data.data());
-				const size_t data_size = vertex_data.size() * vec_size;
-				glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, vertex_data.data());
-				glEnableVertexAttribArray(layout);
-				glVertexAttribPointer(layout, vec_len, GL_FLOAT, GL_FALSE, vec_size, (void*)offset);
-				offset += data_size;
-			}
-		}
+		static void BufferSubData(std::vector<glm::vec2>& vertex_data, int layout, int& offset);
+
 };
 #endif // !MESH_H
 

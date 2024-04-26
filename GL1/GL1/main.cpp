@@ -461,7 +461,7 @@ int main()
 	wall_normal.GenerateMipmap();
 	Material wall_material(std::vector<Texture2D>{wall_diffuse, wall_specular }, 0.4f * 128, 0);
 	Material wall_material_with_normal(std::vector<Texture2D>{wall_diffuse, wall_specular, wall_normal }, 0.4f * 128, 0);
-	Mesh wall_mesh(square_position, square_indices, &square_normal, &square_texcoords);
+	Mesh wall_mesh(square_position, square_indices, &square_normal, &square_texcoords, true);
 #pragma endregion
 
 
