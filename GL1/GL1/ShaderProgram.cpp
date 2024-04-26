@@ -142,10 +142,11 @@ void ShaderProgram::Apply(Material& material)
 	std::map<std::string, unsigned int> texture_count;
 	for (std::string texture_type : Texture2D::TextureTypes) texture_count[texture_type] = 0;
 
+	bool use_normal_map = false;
 	for (int i = 0; i < material.textures.size(); i++)
 	{
 		std::string& type = material.textures[i].type;
-		this->SetUniformBool("use_normal_map", type == "texture_normal");
+		use_normal_map = use_normal_map || (type == "texture_normal");
 		unsigned int idx = texture_count[type];
 		// 纹理命名规则：material.texture_{type}{idx}
 		this->SetUniformInt("material." + type + std::to_string(idx), i + 1);
@@ -154,7 +155,7 @@ void ShaderProgram::Apply(Material& material)
 		glActiveTexture(GL_TEXTURE0 + i + 1);
 		material.textures[i].Bind();
 	}
-
+	this->SetUniformBool("use_normal_map", use_normal_map);
 	this->SetUniformFloat("material.shininess", material.shininess);
 	this->SetUniformFloat("material.refract_ratio", material.refract_ratio);
 }
