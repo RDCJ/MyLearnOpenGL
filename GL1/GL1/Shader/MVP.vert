@@ -2,7 +2,6 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
-layout (location = 3) in vec3 Tangent;
 
 // 使用的是一个std140布局的Uniform块
 layout (std140) uniform Matrices
@@ -15,12 +14,10 @@ uniform mat4 model;
 //uniform mat4 view;
 //uniform mat4 projection;
 uniform mat3 NormalMatrix;
-uniform int use_normal_map;
 
 out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoord;
-out mat3 TBN;
 
 void main()
 {
@@ -34,15 +31,4 @@ void main()
     Normal = NormalMatrix * aNormal;
 
     TexCoord = aTexCoord;
-
-    TBN = mat3(1);
-    if (use_normal_map == 1)
-    {
-        // TBN
-        vec3 T = normalize(vec3(model * vec4(Tangent, 0)));
-        vec3 N = normalize(Normal);
-        T = normalize(T - dot(T, N) * N);
-        vec3 B = cross(N, T);
-        TBN = mat3(T, B, N);
-    }
 }

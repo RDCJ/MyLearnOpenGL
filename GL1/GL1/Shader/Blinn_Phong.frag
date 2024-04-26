@@ -15,8 +15,6 @@ struct Material
     sampler2D texture_emission1;
     sampler2D texture_emission2;
 
-    sampler2D texture_normal0;
-
     sampler2D texture_ambient0;
     // 高光的反光度(Shininess)。一个物体的反光度越高，反射光的能力越强，散射得越少，高光点就会越小
     float shininess;
@@ -52,7 +50,6 @@ uniform int use_blinn;
 uniform int light_num;
 uniform vec3 viewPos;
 uniform Material material;
-uniform int use_normal_map;
 uniform int use_cube_map;
 uniform samplerCube cube_map;
 uniform float refract_ratio;
@@ -143,14 +140,6 @@ void main()
 {   
     // 法线标准化
     vec3 norm = normalize(Normal);
-    // 如果材质中有法线贴图
-    if (use_normal_map == 1)
-    {
-        // 从法线贴图采样获取法线
-        norm = texture(material.texture_normal0, TexCoord).rgb;
-        // 将法线向量转换为范围[-1,1]
-        norm = normalize(norm * 2.0 - 1.0);
-    }
     // 观察方向(片段->摄像机)
     vec3 viewDir = normalize(viewPos - FragPos);
 
