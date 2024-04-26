@@ -28,7 +28,7 @@ void Model::LoadModel(std::string path)
 	// aiProcess_GenNormals：如果模型不包含法向量的话，就为每个顶点创建法线。
 	// aiProcess_SplitLargeMeshes：将比较大的网格分割成更小的子网格，如果你的渲染有最大顶点数限制，只能渲染较小的网格，那么它会非常有用
 	// aiProcess_OptimizeMeshes：将多个小网格拼接为一个大的网格，减少绘制调用从而进行优化
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
 	// 加载了模型之后，检查场景和其根节点不为null，并且检查了它的一个标记(Flag)，来查看返回的数据是不是不完整的
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -59,7 +59,11 @@ void Model::ProcessNode(aiNode * node, const aiScene * scene)
 
 std::tuple<Mesh, Material> Model::ProcessMesh(aiMesh * mesh, const aiScene * scene)
 {
-	std::vector<Vertex> vertices;
+	std::vector<glm::vec3> Position;
+	std::vector<glm::vec3> Normal;
+	std::vector<glm::vec2> TexCoords;
+	std::vector<glm::vec3> Tangent;
+
 	std::vector<unsigned int> indices;
 	std::vector<Texture2D> textures;
 
@@ -67,19 +71,19 @@ std::tuple<Mesh, Material> Model::ProcessMesh(aiMesh * mesh, const aiScene * sce
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex v;
-		v.Position = Utils::ToGlmV3(mesh->mVertices[i]);
-		v.Normal = Utils::ToGlmV3(mesh->mNormals[i]);
+		Position.push_back(Utils::ToGlmV3(mesh->mVertices[i]));
+		Normal.push_back(Utils::ToGlmV3(mesh->mNormals[i]));
+		Tangent.push_back(Utils::ToGlmV3(mesh->mTangents[i]));
 
 		// Assimp允许一个模型在一个顶点上有最多8个不同的纹理坐标，我们只关心第一组纹理坐标
 		if (mesh->mTextureCoords[0]) // 检查网格是否真的包含了纹理坐标
 		{
-			v.TexCoords = Utils::ToGlmV2(mesh->mTextureCoords[0][i]);
+			TexCoords.push_back(Utils::ToGlmV2(mesh->mTextureCoords[0][i]));
 		}
 		else
 		{
-			v.TexCoords = glm::vec2(0);
+			TexCoords.push_back(glm::vec2(0));
 		}
-		vertices.push_back(v);
 	}
 
 	// 提取索引
@@ -101,12 +105,17 @@ std::tuple<Mesh, Material> Model::ProcessMesh(aiMesh * mesh, const aiScene * sce
 		std::vector<Texture2D> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		std::vector<Texture2D> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		std::vector<Texture2D> ambientMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ambient");
+		std::vector<Texture2D> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
 
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		textures.insert(textures.end(), ambientMaps.begin(), ambientMaps.end());
+		textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 	}
-	return std::make_tuple(Mesh(vertices, indices), Material(textures));
+
+	return std::make_tuple(
+		Mesh(Position, indices, &Normal, &TexCoords, &Tangent), 
+		Material(textures));
 }
 
 std::vector<Texture2D> Model::LoadMaterialTextures(aiMaterial* material, aiTextureType type, std::string typeName)

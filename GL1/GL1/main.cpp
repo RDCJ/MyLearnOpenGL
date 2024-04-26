@@ -694,25 +694,6 @@ int main()
 		wall_mesh.Draw(*phong_TBN_shader);
 #pragma endregion
 
-/*
-#pragma region box 实例化渲染
-		phong_instance_shader->Use();
-		phong_instance_shader->Apply(*camera, true);
-		phong_instance_shader->Apply(lights);
-		phong_instance_shader->SetUniformBool("use_cube_map", false);
-		phong_instance_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_instance_shader->Apply(cube_material);
-
-		for (int i = 1; i < box_instance_num; i++)
-		{
-			auto model = box_instance_model[i];
-			phong_instance_shader->SetUniformMat4f("model[" + std::to_string(i) + "]", model);
-			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-			phong_instance_shader->SetUniformMat3f("NormalMatrix[" + std::to_string(i) + "]", normal_matrix);
-		}
-		cube_mesh.DrawInstance(*phong_instance_shader, box_instance_num);
-#pragma endregion
-
 #pragma region nanosuit
 
 		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.15f));
@@ -729,6 +710,15 @@ int main()
 		}
 		else
 		{
+			phong_TBN_shader->Use();
+			phong_TBN_shader->Apply(*camera, true);
+			phong_TBN_shader->Apply(lights);
+			phong_TBN_shader->Apply(transform);
+			phong_TBN_shader->Apply(*skybox_material.cube_map);
+			phong_TBN_shader->SetUniformBool("use_blinn", use_blinn);
+			nanosuit.Draw(*phong_TBN_shader);
+
+			transform.position = glm::vec3(-2, 0, 1);
 			phong_shader->Use();
 			phong_shader->Apply(*camera, true);
 			phong_shader->Apply(lights);
@@ -748,6 +738,27 @@ int main()
 			}
 		}
 #pragma endregion
+
+/*
+#pragma region box 实例化渲染
+		phong_instance_shader->Use();
+		phong_instance_shader->Apply(*camera, true);
+		phong_instance_shader->Apply(lights);
+		phong_instance_shader->SetUniformBool("use_cube_map", false);
+		phong_instance_shader->SetUniformBool("use_blinn", use_blinn);
+		phong_instance_shader->Apply(cube_material);
+
+		for (int i = 1; i < box_instance_num; i++)
+		{
+			auto model = box_instance_model[i];
+			phong_instance_shader->SetUniformMat4f("model[" + std::to_string(i) + "]", model);
+			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
+			phong_instance_shader->SetUniformMat3f("NormalMatrix[" + std::to_string(i) + "]", normal_matrix);
+		}
+		cube_mesh.DrawInstance(*phong_instance_shader, box_instance_num);
+#pragma endregion
+
+
 */
 
 #pragma region  light box
@@ -823,9 +834,9 @@ int main()
 			skybox_shader->Apply(skybox_material);
 			skybox_mesh.Draw(*skybox_shader);
 			glDepthFunc(GL_LESS);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 		}
 #pragma endregion
+		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 		/*
 #pragma region 带透明度的物体
 		glDisable(GL_CULL_FACE);
