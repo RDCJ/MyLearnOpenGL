@@ -61,15 +61,8 @@ uniform Light lights[LIGHT_MAX_NUM];
 vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
 {
     // 计算从片段至光源的光线方向
-    vec3 lightDir = vec3(0);
-    if (light.type == 0)
-    {
-        lightDir = -light.direction;
-    }
-    else
-    {
-        lightDir = light.position - FragPos;
-    }
+    vec3 lightDir = float(light.type == 0) * (-light.direction) + 
+                    float(light.type != 0) * (light.position - FragPos);
     lightDir = normalize(lightDir);
 
     // 聚光光源计算强度
