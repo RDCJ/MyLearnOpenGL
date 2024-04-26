@@ -22,12 +22,11 @@ class Mesh : public IDrawable
 	public:
 		std::vector<Vertex> vertices;
 
-#pragma region 分批顶点属性, layout按照定义顺序对应0~5
+#pragma region 分批顶点属性, layout按照定义顺序对应0~3
 		std::vector<glm::vec3> Position;
 		std::vector<glm::vec3> Normal;
 		std::vector<glm::vec2> TexCoords;
 		std::vector<glm::vec3> Tangent;
-		std::vector<glm::vec3> Bitangent;
 #pragma endregion
 
 		std::vector<unsigned int> indices;
@@ -49,7 +48,7 @@ class Mesh : public IDrawable
 		/// <param name="Bitangent">optional</param>
 		Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices,
 			std::vector<glm::vec3>* Normal = nullptr, std::vector<glm::vec2>* TexCoords = nullptr,
-			std::vector<glm::vec3>* Tangent = nullptr, std::vector<glm::vec3>* Bitangent = nullptr);
+			std::vector<glm::vec3>* Tangent = nullptr);
 		/// <summary>
 		/// 顶点数据分批布局
 		/// </summary>

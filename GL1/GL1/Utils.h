@@ -45,7 +45,7 @@ public:
 	/// <param name="uv2"></param>
 	/// <param name="uv3"></param>
 	/// <returns></returns>
-	static std::tuple<glm::vec3, glm::vec3> CalcTBN(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3,
+	static glm::vec3 CalcTBN(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3,
 		glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3);
 };
 
