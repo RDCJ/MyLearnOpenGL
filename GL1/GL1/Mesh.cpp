@@ -70,6 +70,8 @@ Mesh::Mesh(std::vector<glm::vec3>& Position, std::vector<unsigned int>& _indices
 			this->Bitangent[i] /= vertex_count[i];
 		}
 	}
+
+	SetupMeshBatchedVertex();
 }
 
 void Mesh::SetInstanceMat4(int location)

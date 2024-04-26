@@ -168,6 +168,7 @@ int main()
 	ShaderProgram* cube_map_depth_shader = new ShaderProgram("./Shader/ToWorldPosition.vert", "./Shader/ToSixLightSpace.geo", "./Shader/CalcDepth.frag");
 	ShaderProgram* phong_cube_map_shadow_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/Blinn_Phong_CubeMap_Shadow.frag");
 	ShaderProgram* skybox_depth_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox_depth.frag");
+	ShaderProgram* phong_TBN_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/Blinn_Phong_TBN.frag");
 
 	Material empty_material;
 
@@ -672,25 +673,25 @@ int main()
 
 #pragma region brickwall
 		glDisable(GL_CULL_FACE);
-		phong_shader->Use();
-		phong_shader->Apply(*camera, true, false);
-		phong_shader->Apply(lights);
-		phong_shader->SetUniformBool("use_cube_map", false);
-		phong_shader->SetUniformBool("use_blinn", use_blinn);
+		phong_TBN_shader->Use();
+		phong_TBN_shader->Apply(*camera, true, false);
+		phong_TBN_shader->Apply(lights);
+		phong_TBN_shader->SetUniformBool("use_cube_map", false);
+		phong_TBN_shader->SetUniformBool("use_blinn", use_blinn);
 		Transform wall_tf;
 
 		// 不使用法线贴图
-		phong_shader->Apply(wall_material);
+		phong_TBN_shader->Apply(wall_material);
 		wall_tf.position = glm::vec3(5, 0, -2);
-		phong_shader->Apply(wall_tf);
-		wall_mesh.Draw(*phong_shader);
+		phong_TBN_shader->Apply(wall_tf);
+		wall_mesh.Draw(*phong_TBN_shader);
 		// 使用法线贴图
-		phong_shader->Apply(wall_material_with_normal);
+		phong_TBN_shader->Apply(wall_material_with_normal);
 		wall_tf.position = glm::vec3(5, 2.5, -2);
 		wall_tf.rotate_axis = glm::vec3(1, 0, 0);
 		wall_tf.rotate_angle = -90;
-		phong_shader->Apply(wall_tf);
-		wall_mesh.Draw(*phong_shader);
+		phong_TBN_shader->Apply(wall_tf);
+		wall_mesh.Draw(*phong_TBN_shader);
 #pragma endregion
 
 /*
