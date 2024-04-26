@@ -38,11 +38,11 @@ void main()
     TBN = mat3(1);
     if (use_normal_map == 1)
     {
-        vec3 Bitangent = cross(Normal, Tangent);
         // TBN
         vec3 T = normalize(vec3(model * vec4(Tangent, 0)));
-        vec3 B = normalize(vec3(model * vec4(Bitangent, 0)));
         vec3 N = normalize(Normal);
+        T = normalize(T - dot(T, N) * N);
+        vec3 B = cross(N, T);
         TBN = mat3(T, B, N);
     }
 }
