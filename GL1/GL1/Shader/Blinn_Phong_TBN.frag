@@ -41,39 +41,32 @@ struct Light
     float linear;
     float quadratic;
 };
+#define LIGHT_MAX_NUM 6
 
 in vec3 FragPos;
-in vec3 Normal;
 in vec2 TexCoord;
-in mat3 TBN;
-
-out vec4 FragColor;
+in vec3 Normal;
+out vec3 TangentLightDir[LIGHT_MAX_NUM];
+out vec3 TangentFragPos;
+out vec3 TangentViewPos;
 
 uniform int use_blinn;
 uniform int light_num;
 uniform vec3 viewPos;
 uniform Material material;
-uniform int use_normal_map;
 uniform int use_cube_map;
 uniform samplerCube cube_map;
 uniform float refract_ratio;
 
-#define LIGHT_MAX_NUM 6
 uniform Light lights[LIGHT_MAX_NUM];
 
+out vec4 FragColor;
 
-vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
+vec3 CalcLight(Light light, vec3 normal, vec3 viewDir, vec3 lightDir2)
 {
     // 计算从片段至光源的光线方向
-    vec3 lightDir = vec3(0);
-    if (light.type == 0)
-    {
-        lightDir = -light.direction;
-    }
-    else
-    {
-        lightDir = light.position - FragPos;
-    }
+    vec3 lightDir = float(light.type == 0) * (-light.direction) + 
+                    float(light.type != 0) * (light.position - FragPos);
     lightDir = normalize(lightDir);
 
     // 聚光光源计算强度
@@ -82,7 +75,7 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     if (light.type == 2)
     {
         // theta = cos(光照方向, 光源到片段之间的方向)
-        float theta = dot(-lightDir, normalize(light.direction));
+        float theta = dot(FragPos - light.position, normalize(light.direction));
         float epsilon = light.innerCutOff - light.outerCutOff;
         spot_intensity = clamp((theta - light.outerCutOff) / epsilon, 0, 1);
     }
@@ -142,28 +135,25 @@ vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
 
 void main()
 {   
-    // 法线标准化
-    vec3 norm = normalize(Normal);
-    // 如果材质中有法线贴图
-    if (use_normal_map == 1)
-    {
-        // 从法线贴图采样获取法线
-        norm = texture(material.texture_normal0, TexCoord).rgb;
-        // 将法线向量转换为范围[-1,1]
-        norm = normalize(norm * 2.0 - 1.0);
-        norm = normalize(TBN * norm);
-    }
+    /*
+    // 从法线贴图采样获取法线
+    vec3 TangentNorm = texture(material.texture_normal0, TexCoord).rgb;
+    // 将法线向量转换为范围[-1,1]
+    TangentNorm = normalize(TangentNorm * 2.0 - 1.0);
+*/
+    vec3 TangentNorm = normalize(Normal);
+
     // 观察方向(片段->摄像机)
-    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 TangentViewDir = normalize(viewPos - FragPos);
 
     vec3 result = vec3(0);
 
     for (int i=0; i<light_num; i++)
-        result += CalcLight(lights[i], norm, viewDir);
+        result += CalcLight(lights[i], TangentNorm, TangentViewDir, TangentLightDir[i]);
     
     if (use_cube_map == 1)
     {
-        result += vec3(CalcEnvironmentReflection(norm, -viewDir));
+        result += vec3(CalcEnvironmentReflection(TangentNorm, -TangentViewDir));
         //result += vec3(CalcEnvironmentRefraction(norm, -viewDir));
     }
     FragColor = vec4(result, 1.0f);
