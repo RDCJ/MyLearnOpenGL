@@ -57,10 +57,9 @@ uniform int use_cube_map;
 uniform samplerCube cube_map;
 uniform float refract_ratio;
 
-uniform samplerCube cube_map_shadow;
-
 // 单光源
-#define LIGHT_MAX_NUM 1
+#define LIGHT_MAX_NUM 6
+uniform samplerCube cube_map_shadow[LIGHT_MAX_NUM];
 uniform Light lights[LIGHT_MAX_NUM];
 
 vec3 sampleOffsetDirections[20] = vec3[]
@@ -73,7 +72,7 @@ vec3 sampleOffsetDirections[20] = vec3[]
 );
 
 // 计算阴影的强度
-float CalcShadow(vec3 lightDir, vec3 light_pos, vec3 normal)
+float CalcShadow(int light_idx, vec3 lightDir, vec3 light_pos, vec3 normal)
 {
     vec3 frag2light = FragPos - light_pos;
     // 获取当前fragment和光源之间的深度值
@@ -87,7 +86,7 @@ float CalcShadow(vec3 lightDir, vec3 light_pos, vec3 normal)
     {
         // 获取立方体贴图中存储的深度
         // 计算fragment的位置与光的位置之间的差向量，使用这个向量作为一个方向向量去对立方体贴图进行采样
-        float cloestDepth = texture(cube_map_shadow, frag2light + sampleOffsetDirections[i] * diskRadius).r;
+        float cloestDepth = texture(cube_map_shadow[light_idx], frag2light + sampleOffsetDirections[i] * diskRadius).r;
         // closest_depth在0到1的范围，所以我们先将其转换回0到z_far的范围
         cloestDepth *= z_far;
         shadow += currentDepth - bias > cloestDepth ? 1.0: 0.0;
@@ -96,8 +95,9 @@ float CalcShadow(vec3 lightDir, vec3 light_pos, vec3 normal)
 }
 
 
-vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
+vec3 CalcLight(int light_idx, vec3 normal, vec3 viewDir)
 {
+    Light light = lights[light_idx];
     // 计算从片段至光源的光线方向
     vec3 lightDir = vec3(0);
     if (light.type == 0)
@@ -157,7 +157,7 @@ vec3 CalcLight(Light light, vec3 normal, vec3 viewDir)
     //vec3 emission = vec3(texture(material.emission, TexCoord));
 
     // 计算阴影
-    float shadow = CalcShadow(lightDir, light.position, normal);
+    float shadow = CalcShadow(light_idx, lightDir, light.position, normal);
     
     // diffuse和specular乘以(1-shadow)，这表示这个片段有多大成分不在阴影中
     return attenuation * (ambient + spot_intensity * (1 - shadow) * (diffuse + specular));// + emission;
@@ -188,7 +188,7 @@ void main()
     vec3 result = vec3(0);
 
     for (int i=0; i<light_num; i++)
-        result += CalcLight(lights[i], norm, viewDir);
+        result += CalcLight(i, norm, viewDir);
     
     if (use_cube_map == 1)
     {
