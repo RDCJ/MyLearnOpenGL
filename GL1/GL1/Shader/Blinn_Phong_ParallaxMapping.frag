@@ -133,10 +133,7 @@ vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
 // 使用视差贴图对TexCoord进行偏移
 vec2 ParallaxMapping(vec2 texcoords, vec3 viewDir)
 {
-    const float minLayerNum = 30;
-    const float maxLayerNum = 100;
-    // 当视线与表面偏向于垂直时使用更少层数，否则使用更多层数
-    float layerNum = mix(maxLayerNum, minLayerNum, abs(dot(vec3(0, 0, 1), viewDir)));
+    float layerNum = 30;
     // 一层的深度
     float layerDepth = 1.0 / layerNum;
     // TexCoord偏移一层的偏移值
@@ -147,6 +144,7 @@ vec2 ParallaxMapping(vec2 texcoords, vec3 viewDir)
     vec2 currentTexcoords = texcoords;
     // 当前uv在视差贴图中采样的深度
     float currentMapDepth = texture(material.texture_parallax0, currentTexcoords).r;
+
     // 迭代中逐层对texcoords进行偏移
     while (currentMapDepth > currentLayerDepth)
     {
@@ -154,8 +152,16 @@ vec2 ParallaxMapping(vec2 texcoords, vec3 viewDir)
         currentTexcoords -= deltaTexcoords;
         currentMapDepth = texture(material.texture_parallax0, currentTexcoords).r;
     }
+    //return currentTexcoords;
 
-    return currentTexcoords;
+    vec2 lastTexcoords = currentTexcoords + deltaTexcoords;
+    float lastMapDepth = texture(material.texture_parallax0, lastTexcoords).r;
+    float lastLayerDepth = currentLayerDepth - layerDepth;
+
+    float d1 = currentMapDepth - currentLayerDepth;
+    float d2 = lastLayerDepth - lastMapDepth;
+    float weight = d1 / (d1 + d2);
+    return mix(lastTexcoords, currentTexcoords, weight);
 }
 
 void main()
