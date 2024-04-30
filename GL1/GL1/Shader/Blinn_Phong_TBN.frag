@@ -45,14 +45,12 @@ struct Light
 
 in vec3 FragPos;
 in vec2 TexCoord;
-in vec3 Normal;
-out vec3 TangentLightDir[LIGHT_MAX_NUM];
-out vec3 TangentFragPos;
-out vec3 TangentViewPos;
+in vec3 TangentLightDir[LIGHT_MAX_NUM];
+in vec3 TangentFragPos;
+in vec3 TangentViewPos;
 
 uniform int use_blinn;
 uniform int light_num;
-uniform vec3 viewPos;
 uniform Material material;
 uniform int use_cube_map;
 uniform samplerCube cube_map;
@@ -62,13 +60,8 @@ uniform Light lights[LIGHT_MAX_NUM];
 
 out vec4 FragColor;
 
-vec3 CalcLight(Light light, vec3 normal, vec3 viewDir, vec3 lightDir2)
+vec3 CalcLight(Light light, vec3 normal, vec3 viewDir, vec3 lightDir)
 {
-    // 计算从片段至光源的光线方向
-    vec3 lightDir = float(light.type == 0) * (-light.direction) + 
-                    float(light.type != 0) * (light.position - FragPos);
-    lightDir = normalize(lightDir);
-
     // 聚光光源计算强度
     // 内圆锥之内强度为1，内圆锥到外圆锥之间强度由1减小到0
     float spot_intensity = 1;
@@ -135,16 +128,13 @@ vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
 
 void main()
 {   
-    /*
     // 从法线贴图采样获取法线
     vec3 TangentNorm = texture(material.texture_normal0, TexCoord).rgb;
     // 将法线向量转换为范围[-1,1]
     TangentNorm = normalize(TangentNorm * 2.0 - 1.0);
-*/
-    vec3 TangentNorm = normalize(Normal);
 
     // 观察方向(片段->摄像机)
-    vec3 TangentViewDir = normalize(viewPos - FragPos);
+    vec3 TangentViewDir = normalize(TangentViewPos - TangentFragPos);
 
     vec3 result = vec3(0);
 

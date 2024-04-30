@@ -40,7 +40,6 @@ uniform Light lights[LIGHT_MAX_NUM];
 
 out vec3 FragPos;
 out vec2 TexCoord;
-out vec3 Normal;
 
 out vec3 TangentLightDir[LIGHT_MAX_NUM];
 out vec3 TangentFragPos;
@@ -56,8 +55,6 @@ void main()
 
     TexCoord = aTexCoord;
 
-    Normal = NormalMatrix * aNormal;
-/*
     // TBN
     vec3 T = normalize(NormalMatrix * Tangent);
     vec3 N = normalize(NormalMatrix * aNormal);
@@ -66,7 +63,6 @@ void main()
     // 正交矩阵转置等于逆
     mat3 TBN_inverse = transpose(mat3(T, B, N));
 
-
     TangentFragPos = TBN_inverse * FragPos;
     TangentViewPos = TBN_inverse * viewPos;
     for (int i=0; i<light_num; i++)
@@ -74,14 +70,5 @@ void main()
         vec3 lightDir = float(lights[i].type == 0) * (-lights[i].direction) + 
                         float(lights[i].type != 0) * (lights[i].position - FragPos);
         TangentLightDir[i] = normalize(TBN_inverse * lightDir);
-    }
-    */
-    TangentFragPos = FragPos;
-    TangentViewPos = viewPos;
-    for (int i=0; i<light_num; i++)
-    {
-        vec3 lightDir = float(lights[i].type == 0) * (-lights[i].direction) + 
-                        float(lights[i].type != 0) * (lights[i].position - FragPos);
-        TangentLightDir[i] = normalize(lightDir);
     }
 }
