@@ -133,9 +133,29 @@ vec4 CalcEnvironmentRefraction(vec3 normal, vec3 viewDir)
 // 使用视差贴图对TexCoord进行偏移
 vec2 ParallaxMapping(vec2 texcoords, vec3 viewDir)
 {
-    float height = texture(material.texture_parallax0, texcoords).r;
-    vec2 offset = viewDir.xy / viewDir.z * (height * parallax_height_scale);
-    return texcoords - offset;
+    const float minLayerNum = 30;
+    const float maxLayerNum = 100;
+    // 当视线与表面偏向于垂直时使用更少层数，否则使用更多层数
+    float layerNum = mix(maxLayerNum, minLayerNum, abs(dot(vec3(0, 0, 1), viewDir)));
+    // 一层的深度
+    float layerDepth = 1.0 / layerNum;
+    // TexCoord偏移一层的偏移值
+    vec2 deltaTexcoords = viewDir.xy / viewDir.z * parallax_height_scale / layerNum;
+    // 当前层所在的深度
+    float currentLayerDepth = 0.0;
+    // 当前uv
+    vec2 currentTexcoords = texcoords;
+    // 当前uv在视差贴图中采样的深度
+    float currentMapDepth = texture(material.texture_parallax0, currentTexcoords).r;
+    // 迭代中逐层对texcoords进行偏移
+    while (currentMapDepth > currentLayerDepth)
+    {
+        currentLayerDepth += layerDepth;
+        currentTexcoords -= deltaTexcoords;
+        currentMapDepth = texture(material.texture_parallax0, currentTexcoords).r;
+    }
+
+    return currentTexcoords;
 }
 
 void main()
