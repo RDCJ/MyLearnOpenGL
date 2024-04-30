@@ -111,7 +111,7 @@ static std::vector<Light*> CreateLight()
 	for (Light* light : lights)
 	{
 		light->ambient = glm::vec3(0.4f);
-		light->diffuse = glm::vec3(1);
+		light->diffuse = glm::vec3(0.5);
 		light->specular = glm::vec3(1);
 	}
 	directional_light->diffuse = glm::vec3(1);
@@ -169,6 +169,7 @@ int main()
 	ShaderProgram* phong_cube_map_shadow_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/Blinn_Phong_CubeMap_Shadow.frag");
 	ShaderProgram* skybox_depth_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox_depth.frag");
 	ShaderProgram* phong_TBN_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_TBN.frag");
+	ShaderProgram* phong_parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_ParallaxMapping.frag");
 
 	Material empty_material;
 
@@ -277,13 +278,8 @@ int main()
 	}
 
 	Texture2D diffuse_map = Texture2D("Image/container2.png", "texture_diffuse");
-	diffuse_map.GenerateMipmap();
-
 	Texture2D specular_map = Texture2D("Image/container2_specular.png", "texture_specular");
-	specular_map.GenerateMipmap();
-
 	Texture2D emission_map = Texture2D("Image/matrix.jpg", "texture_emission");
-	emission_map.GenerateMipmap();
 
 	std::vector<Texture2D> _textures{ diffuse_map , specular_map };
 
@@ -455,16 +451,22 @@ int main()
 
 #pragma region brick wall
 	Texture2D wall_diffuse("Image/brickwall.jpg", "texture_diffuse");
-	wall_diffuse.GenerateMipmap();
 	Texture2D wall_specular("Image/brickwall_specular.jpg", "texture_specular");
-	wall_specular.GenerateMipmap();
 	Texture2D wall_normal("Image/brickwall_normal.jpg", "texture_normal");
-	wall_normal.GenerateMipmap();
 	Material wall_material(std::vector<Texture2D>{wall_diffuse, wall_specular }, 0.4f * 128, 0);
 	Material wall_material_with_normal(std::vector<Texture2D>{wall_diffuse, wall_specular, wall_normal }, 0.4f * 128, 0);
 	Mesh wall_mesh(square_position, square_indices, &square_normal, &square_texcoords, true);
 #pragma endregion
 
+#pragma region brick wall for parallax mapping
+	Texture2D bricks2_diffuse("Image/bricks2.jpg", "texture_diffuse");
+	Texture2D bricks2_specular("Image/brickwall_specular.jpg", "texture_specular");
+	Texture2D bricks2_normal("Image/bricks2_normal.jpg", "texture_normal");
+	Texture2D bricks2_parallax("Image/bricks2_disp.jpg", "texture_parallax");
+
+	Material bricks2_material(std::vector<Texture2D>{bricks2_diffuse, bricks2_specular, bricks2_normal, bricks2_parallax}, 0.4f * 128, 0);
+	Mesh brick2_mesh(square_position, square_indices, &square_normal, &square_texcoords, true);
+#pragma endregion
 
 	Time::Init();
 	
@@ -698,6 +700,25 @@ int main()
 		//wall_tf.rotate_angle = -90;
 		phong_TBN_shader->Apply(wall_tf);
 		wall_mesh.Draw(*phong_TBN_shader);
+#pragma endregion
+
+#pragma region bricks2 for parallax mapping
+		glDisable(GL_CULL_FACE);
+
+		Transform bricks2_tf;
+
+		phong_parallax_shader->Use();
+		phong_parallax_shader->Apply(*camera, true, false);
+		phong_parallax_shader->Apply(lights);
+		phong_parallax_shader->SetUniformBool("use_cube_map", false);
+		phong_parallax_shader->SetUniformBool("use_blinn", use_blinn);
+		phong_parallax_shader->SetUniformFloat("parallax_height_scale", 0.1);
+		phong_parallax_shader->Apply(bricks2_material);
+		bricks2_tf.position = glm::vec3(7.5, 2.5, -2);
+		//wall_tf.rotate_axis = glm::vec3(1, 0, 0);
+		//wall_tf.rotate_angle = -90;
+		phong_parallax_shader->Apply(bricks2_tf);
+		wall_mesh.Draw(*phong_parallax_shader);
 #pragma endregion
 
 #pragma region nanosuit

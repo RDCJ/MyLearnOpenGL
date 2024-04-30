@@ -6,12 +6,13 @@ const std::vector<std::string> Texture2D::TextureTypes
 	"texture_specular",
 	"texture_emission",
 	"texture_ambient",
-	"texture_normal"
+	"texture_normal",
+	"texture_parallax"
 };
 
 std::unordered_map<std::string, Texture2D> Texture2D::LoadedTextures;
 
-Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertical): type(_type)
+Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertical, bool mipmap): type(_type)
 {
 	stbi_set_flip_vertically_on_load(flip_vertical);
 	int width, height, nrChannels;
@@ -21,7 +22,8 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 	if (img_data)
 	{
 		ToGL(width, height, nrChannels, img_data);
-		GenerateMipmap();
+		if (mipmap)
+			GenerateMipmap();
 		SetDefaultParameters();
 	}
 	else

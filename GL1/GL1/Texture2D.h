@@ -16,7 +16,7 @@ class Texture2D: public Texture
 		unsigned int GetID() { return ID; }
 		Texture2D() { type = ""; ID = 0; }
 
-		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true);
+		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true, bool mipmap=true);
 
 		Texture2D(int width, int height, GLenum format, void* data, GLenum data_type);
 		/// <summary>
