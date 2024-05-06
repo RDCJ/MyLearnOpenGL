@@ -129,6 +129,33 @@ void ShaderProgram::Apply(UniformBuffer& uniform_buffer)
 	glUniformBlockBinding(this->ID, uniform_block_index, uniform_buffer.binding_point);
 }
 
+void ShaderProgram::Apply(Shadow& shadow)
+{
+	if (shadow.light->type == LightType::Point)
+	{
+		shadow.camera->position = shadow.light->position;
+		for (int i = 0; i < 6; i++)
+		{
+			shadow.camera->Front = PointShadow::six_dir[i];
+			shadow.camera->Up = PointShadow::six_up[i];
+			this->SetUniformMat4f("lightSpaceMat[" + std::to_string(i) + "]", shadow.camera->GetProjection() * shadow.camera->GetView());
+		}
+		this->SetUniformFloat("z_far", shadow.camera->Z_Far);
+		this->SetUniformVec3("light_pos", shadow.camera->position);
+	}
+}
+
+void ShaderProgram::Apply(Shadow& shadow, int texture_index)
+{
+	if (shadow.light->type == LightType::Point)
+	{
+		this->SetUniformFloat("z_far", shadow.camera->Z_Far);
+		this->SetUniformInt("cube_map_shadow[" + std::to_string(texture_index) + "]", 3 + texture_index);
+		glActiveTexture(GL_TEXTURE3 + texture_index);
+		shadow.depth_map_buffer.cube_map_buffer->Bind();
+	}
+}
+
 void ShaderProgram::Apply(Material& material)
 {
 	if (material.cube_map != nullptr)

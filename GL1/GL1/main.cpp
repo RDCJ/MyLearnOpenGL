@@ -503,37 +503,15 @@ int main()
 			{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
 			{GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}
 	};
-	std::vector<FrameBuffer> depth_map_buffers;
-	// 创建与光源相同数量的帧缓冲
-	for (int i = 0; i < lights.size(); i++) 
+
+	// 创建与光源相同数量的阴影
+	std::vector<Shadow*> shadows;
+	for (int i = 0; i < lights.size(); i++)
 	{
-		depth_map_buffers.emplace_back(SHADOW_WIDTH, SHADOW_HEIGHT);
-		FrameBuffer& depth_map_buffer = depth_map_buffers.back();
-		// 因为只关心深度值，把纹理格式指定为GL_DEPTH_COMPONENT
-		depth_map_buffer.AddTextureCubMap(GL_DEPTH_COMPONENT, GL_FLOAT, 0, depth_tex_params);
-		depth_map_buffer.CheckStatus();
+		Shadow* shadow = new PointShadow(SHADOW_WIDTH, SHADOW_HEIGHT, lights[i], depth_tex_params, 0.1f, 25.0f);
+		shadows.push_back(shadow);
 	}
 #pragma endregion
-
-	PerspectiveCamera shadow_camera(90, SHADOW_WIDTH / (float)SHADOW_HEIGHT, 0.1f, 25.0f);
-	std::vector<glm::vec3> six_dir = {
-		glm::vec3(1.0, 0.0, 0.0),
-		glm::vec3(-1.0, 0.0, 0.0),
-		glm::vec3(0.0, 1.0, 0.0),
-		glm::vec3(0.0 ,-1.0, 0.0),
-		glm::vec3(0.0, 0.0, 1.0),
-		glm::vec3(0.0, 0.0, -1.0)
-	};
-
-	std::vector<glm::vec3> six_up = {
-		glm::vec3(0.0, -1.0, 0.0),
-		glm::vec3(0.0, -1.0, 0.0),
-		glm::vec3(0.0, 0.0, 1.0),
-		glm::vec3(0.0, 0.0, -1.0),
-		glm::vec3(0.0, -1.0, 0.0),
-		glm::vec3(0.0, -1.0, 0.0)
-	};
-
 	bool use_box_outline = false;
 	bool active_skybox = true;
 	bool use_explode = false;
@@ -557,7 +535,6 @@ int main()
 		if (light_follow_camera)
 		{
 			lights[0]->position = camera->position;
-			shadow_camera.position = lights[0]->position;
 		}
 	
 		camera->FillUniformMatrices();
@@ -577,23 +554,10 @@ int main()
 		glCullFace(GL_FRONT);
 		for (int k = 0; k < lights.size(); k++) 
 		{
-			FrameBuffer& depth_map_buffer = depth_map_buffers[k];
-			Light& light = (*lights[k]);
-
-			depth_map_buffer.UpdateViewport();
-			depth_map_buffer.Bind();
-			// 绑定帧缓冲后要清除之前的缓存
-			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+			shadows[k]->Clear();
 			cube_map_depth_shader->Use();
-			shadow_camera.position = light.position;
-			for (int i = 0; i < 6; i++)
-			{
-				shadow_camera.Front = six_dir[i];
-				shadow_camera.Up = six_up[i];
-				cube_map_depth_shader->SetUniformMat4f("lightSpaceMat[" + std::to_string(i) + "]", shadow_camera.GetProjection() * shadow_camera.GetView());
-			}
-			cube_map_depth_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
-			cube_map_depth_shader->SetUniformVec3("light_pos", light.position);
+			cube_map_depth_shader->Apply(*shadows[k]);
+
 			for (int i = 0; i < 10; i++)
 			{
 				float angle = 29 * i;
@@ -645,14 +609,11 @@ int main()
 			phong_cube_map_shadow_shader->Apply(lights);
 			phong_cube_map_shadow_shader->SetUniformBool("use_cube_map", false);
 			phong_cube_map_shadow_shader->SetUniformBool("use_blinn", use_blinn);
-			phong_cube_map_shadow_shader->SetUniformFloat("z_far", shadow_camera.Z_Far);
 			phong_cube_map_shadow_shader->Apply(cube_material);
 
-			for (int j = 0; j < depth_map_buffers.size(); j++) 
+			for (int j = 0; j < lights.size(); j++) 
 			{
-				phong_cube_map_shadow_shader->SetUniformInt("cube_map_shadow[" + std::to_string(j) + "]", 3 + j);
-				glActiveTexture(GL_TEXTURE3 + j);
-				depth_map_buffers[j].cube_map_buffer->Bind();
+				phong_cube_map_shadow_shader->Apply(*shadows[j], j);
 			}
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);

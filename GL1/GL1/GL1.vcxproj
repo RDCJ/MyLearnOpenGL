@@ -147,6 +147,8 @@
     <ClCompile Include="PerspectiveCamera.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="Shadow.cpp" />
+    <ClCompile Include="PointShadow.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Texture2D.cpp" />
@@ -170,6 +172,8 @@
     <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="Shadow.h" />
+    <ClInclude Include="PointShadow.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Texture2D.h" />

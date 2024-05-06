@@ -8,6 +8,8 @@
 #include "Transform.h"
 #include "Material.h"
 #include <GLFW/glfw3.h>
+#include "Shadow.h"
+#include "PointShadow.h"
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -90,7 +92,17 @@ class ShaderProgram
 		/// </summary>
 		/// <param name="uniform_buffer"></param>
 		void Apply(UniformBuffer& uniform_buffer);
-
+		/// <summary>
+		/// 生成阴影贴图时调用
+		/// </summary>
+		/// <param name="shadow"></param>
+		void Apply(Shadow& shadow);
+		/// <summary>
+		///  绘制阴影时调用
+		/// </summary>
+		/// <param name="shadow"></param>
+		/// <param name="texture_index"></param>
+		void Apply(Shadow& shadow, int texture_index);
 #pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
 		{
