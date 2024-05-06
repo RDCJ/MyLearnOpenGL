@@ -1,5 +1,4 @@
 #pragma once
-#ifndef MATERIAL_H
 #include "Texture2D.h"
 #include "TextureCubeMap.h"
 #include <vector>
@@ -27,7 +26,6 @@ class Material
 
 	
 };
-#endif // !MATERIAL_H
 
 
 

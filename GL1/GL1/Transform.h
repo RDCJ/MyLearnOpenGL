@@ -1,5 +1,4 @@
 #pragma once
-#ifndef TRANSFORM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -38,7 +37,6 @@ class Transform
 			: position(position), scale(scale), rotate_axis(rotate_axis), rotate_angle(rotate_angle)
 		{}
 };
-#endif // !TRANSFORM
 
 
 

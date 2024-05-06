@@ -1,6 +1,4 @@
 #pragma once
-#ifndef  TEXTURE_H
-#define TEXTURE_H
 
 #include <glad/glad.h>
 #include <map>
@@ -27,8 +25,6 @@ class Texture
 		unsigned int ID = 0;
 		virtual GLenum GLTarget() = 0;
 };
-
-#endif // ! TEXTURE_H
 
 
 

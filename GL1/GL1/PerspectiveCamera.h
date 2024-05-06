@@ -1,6 +1,4 @@
 #pragma once
-#ifndef PERSPECTIVECAMERA_H
-#define PERSPECTIVECAMERA_H
 #include "Camera.h"
 
 class PerspectiveCamera: public Camera
@@ -24,7 +22,6 @@ class PerspectiveCamera: public Camera
 
 };
 
-#endif // !PERSPECTIVECAMERA_H
 
 
 

@@ -1,5 +1,4 @@
 #pragma once
-#ifndef TIME_H
 #include <GLFW/glfw3.h>
 
 class Time
@@ -11,7 +10,6 @@ class Time
 		static void Update();
 
 };
-#endif // !TIME_H
 
 
 

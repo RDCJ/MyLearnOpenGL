@@ -1,5 +1,4 @@
 #pragma once
-#ifndef LIGHT_H
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
@@ -37,7 +36,6 @@ class Light
 	private:
 
 };
-#endif // !LIGHT_H
 
 
 

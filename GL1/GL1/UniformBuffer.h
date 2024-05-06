@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef UNIFORMBUFFER_H
-
 #include <string>
 #include <glad/glad.h>
 
@@ -47,7 +45,6 @@ class UniformBuffer
 
 		UniformBuffer() = default;
 };
-#endif // !UNIFORMBUFFER_H
 
 
 

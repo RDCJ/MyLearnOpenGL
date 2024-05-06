@@ -1,5 +1,4 @@
 #pragma once
-#ifndef UTILS_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,9 +47,6 @@ public:
 	static glm::vec3 CalcTBN(glm::vec3 pos1, glm::vec3 pos2, glm::vec3 pos3,
 		glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3);
 };
-
-
-#endif // !UTILS_H
 
 
 

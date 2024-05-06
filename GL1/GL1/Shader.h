@@ -1,6 +1,4 @@
 #pragma once
-#ifndef SHADER_H
-#define SHADER_H
 
 #include <glad/glad.h>
 #include <iostream>
@@ -41,5 +39,3 @@ class Shader
 		unsigned int ID = 0;
 		void Compile(const char** shader_source);
 };
-
-#endif

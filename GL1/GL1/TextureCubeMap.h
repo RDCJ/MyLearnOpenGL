@@ -1,5 +1,4 @@
 #pragma once
-#ifndef TEXTURECUBEMAP_H
 #include <vector>
 #include <string>
 #include <iostream>
@@ -21,7 +20,6 @@ class TextureCubeMap: public Texture
 
 };
 
-#endif // !TEXTURECUBEMAP_H
 
 
 

@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef  FPSCONTROLLER_H
-#define FPSCONTROLLER_H
-
 #include "PerspectiveCamera.h"
 #include <GLFW/glfw3.h>
 
@@ -43,8 +40,6 @@ class FPSController
 		/// <param name="y_offset"></param>
 		void OnMouseScroll(float y_offset);
 };
-
-#endif // ! FPSCONTROLLER_H
 
 
 

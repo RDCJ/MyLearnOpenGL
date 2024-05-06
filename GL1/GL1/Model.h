@@ -1,6 +1,5 @@
 #pragma once
 
-#ifndef MODEL_H
 #include <vector>
 #include <string>
 #include <iostream>
@@ -69,7 +68,6 @@ class Model: IDrawable
 		bool texture_flip_vertical;
 
 };
-#endif // !MODEL_H
 
 
 

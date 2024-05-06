@@ -1,5 +1,4 @@
 #pragma once
-#ifndef OBJECT_H
 #include "IDrawable.h"
 #include "Transform.h"
 #include "Material.h"
@@ -31,7 +30,6 @@ class Object: IDrawable
 
 		Object() = default;
 };
-#endif // !OBJECT_H
 
 
 

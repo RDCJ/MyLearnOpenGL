@@ -1,8 +1,5 @@
 #pragma once
-#ifndef ORTHOCAMERA_H
-#define ORTHOCAMERA_H
 #include "Camera.h"
-
 
 class OrthoCamera: public Camera
 {
@@ -24,7 +21,6 @@ class OrthoCamera: public Camera
 
 };
 
-#endif // !ORTHOCAMERA_H
 
 
 

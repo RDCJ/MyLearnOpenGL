@@ -1,5 +1,4 @@
 #pragma once
-#ifndef  TEXTURE2D_H
 
 #include <glad/glad.h>
 #include "stb_image.h"
@@ -44,7 +43,6 @@ class Texture2D: public Texture
 		GLenum GLTarget() override { return GL_TEXTURE_2D; }
 };
 
-#endif // ! TEXTURE2D_H
 
 
 

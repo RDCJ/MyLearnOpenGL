@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef FRAMEBUFFER_H
-#define FRAMEBUFFER_H
-
 #include <glad/glad.h>
 #include "Texture2D.h"
 #include "TextureCubeMap.h"
@@ -44,8 +41,6 @@ class FrameBuffer
 		/// </summary>
 		unsigned int RBO = 0;
 };
-
-#endif // !FRAMEBUFFER_H
 
 
 
