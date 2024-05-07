@@ -2,8 +2,8 @@
 
 TextureCubeMap::TextureCubeMap(std::vector<std::string>& img_paths)
 {
-	glGenTextures(1, &ID);
-	Bind();
+	Generate();
+	BindSelf();
 
 	if (img_paths.size() < 6)
 	{
@@ -29,8 +29,8 @@ TextureCubeMap::TextureCubeMap(std::vector<std::string>& img_paths)
 
 TextureCubeMap::TextureCubeMap(int width, int height, GLenum format, void* data, GLenum data_type)
 {
-	glGenTextures(1, &ID);
-	Bind();
+	Generate();
+	BindSelf();
 	for (int i = 0; i < 6; i++)
 	{
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, data_type, data);

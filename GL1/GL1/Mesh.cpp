@@ -92,13 +92,6 @@ void Mesh::SetInstanceMat4(int location)
 
 void Mesh::Draw(ShaderProgram& shader)
 {
-	//// 先解除其他纹理的绑定
-	//for (int i = 0; i < 15; i++)
-	//{
-	//	glActiveTexture(GL_TEXTURE0 + i);
-	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//}
-	// 绘制mesh
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);

@@ -2,13 +2,13 @@
 
 void Texture::SetParameters(GLenum option, GLenum value)
 {
-	Bind();
+	BindSelf();
 	glTexParameteri(GLTarget(), option, value);
 }
 
 void Texture::SetParameters(const TexParams& params)
 {
-	Bind();
+	BindSelf();
 	GLenum target = GLTarget();
 	for (auto& param : params)
 	{
@@ -16,12 +16,12 @@ void Texture::SetParameters(const TexParams& params)
 	}
 }
 
-void Texture::Bind()
+void Texture::Bind(GLenum target, unsigned int _ID)
 {
-	glBindTexture(GLTarget(), ID);
+	glBindTexture(target, _ID);
 }
 
-void Texture::Unbind()
+void Texture::Generate()
 {
-	glBindTexture(GLTarget(), 0);
+	glGenTextures(1, &ID);
 }

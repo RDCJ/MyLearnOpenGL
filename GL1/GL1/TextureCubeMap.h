@@ -10,6 +10,7 @@
 class TextureCubeMap: public Texture
 {
 	public:
+		TextureCubeMap() { }
 		TextureCubeMap(std::vector<std::string>& img_paths);
 		TextureCubeMap(int width, int height, GLenum format, void* data, GLenum data_type);
 		void SetDefaultParameters();

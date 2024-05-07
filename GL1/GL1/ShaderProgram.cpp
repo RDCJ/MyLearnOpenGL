@@ -116,7 +116,7 @@ void ShaderProgram::Apply(TextureCubeMap& cube_map)
 
 	this->SetUniformInt("cube_map", 0);
 	glActiveTexture(GL_TEXTURE0);
-	cube_map.Bind();
+	cube_map.BindSelf();
 }
 
 void ShaderProgram::Apply(UniformBuffer& uniform_buffer)
@@ -152,7 +152,7 @@ void ShaderProgram::Apply(Shadow& shadow, int texture_index)
 		this->SetUniformFloat("z_far", shadow.camera->Z_Far);
 		this->SetUniformInt("cube_map_shadow[" + std::to_string(texture_index) + "]", 3 + texture_index);
 		glActiveTexture(GL_TEXTURE3 + texture_index);
-		shadow.depth_map_buffer.cube_map_buffer->Bind();
+		shadow.depth_map_buffer.cube_map_buffer->BindSelf();
 	}
 }
 
@@ -162,7 +162,7 @@ void ShaderProgram::Apply(Material& material)
 	{
 		this->SetUniformInt("cube_map", 0);
 		glActiveTexture(GL_TEXTURE0);
-		material.cube_map->Bind();
+		material.cube_map->BindSelf();
 	}
 
 	// 绑定纹理
@@ -178,7 +178,7 @@ void ShaderProgram::Apply(Material& material)
 		texture_count[type] = idx + 1;
 		// 在绑定之前激活相应的纹理单元
 		glActiveTexture(GL_TEXTURE0 + i + 1);
-		material.textures[i].Bind();
+		material.textures[i].BindSelf();
 	}
 	this->SetUniformFloat("material.shininess", material.shininess);
 	this->SetUniformFloat("material.refract_ratio", material.refract_ratio);

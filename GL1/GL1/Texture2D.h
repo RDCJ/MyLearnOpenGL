@@ -12,8 +12,8 @@
 class Texture2D: public Texture
 {
 	public:
-		unsigned int GetID() { return ID; }
-		Texture2D() { type = ""; ID = 0; }
+		static const TexParams DefaultParams;
+		Texture2D() { type = "";}
 
 		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true, bool mipmap=true);
 
@@ -37,7 +37,7 @@ class Texture2D: public Texture
 		/// </summary>
 		static const std::vector<std::string> TextureTypes;
 
-	private:
+	protected:
 		static std::unordered_map<std::string, Texture2D> LoadedTextures;
 		void ToGL(int width, int height, int nChannel, unsigned char* img_data);
 		GLenum GLTarget() override { return GL_TEXTURE_2D; }

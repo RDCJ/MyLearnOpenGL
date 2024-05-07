@@ -201,6 +201,9 @@ int main()
 	};
 	std::vector<unsigned int> square_indices{ 0, 1, 2, 2, 3, 0 };
 
+	Mesh square_mesh(square_vertices, square_indices);
+	Mesh square_mesh2(square_position, square_indices, &square_normal, &square_texcoords, true);
+
 #pragma region skybox_texture
 	std::vector<std::string> skybox_img_paths{
 		"right.jpg",
@@ -307,9 +310,6 @@ int main()
 
 	Material grass_material(grass_texture);
 	Material window_material(window_Texture);
-
-	Mesh grass_mesh(square_vertices, square_indices);
-	Mesh window_mesh(square_vertices, square_indices);
 #pragma endregion
 
 #pragma region skybox
@@ -455,7 +455,6 @@ int main()
 	Texture2D wall_normal("Image/brickwall_normal.jpg", "texture_normal");
 	Material wall_material(std::vector<Texture2D>{wall_diffuse, wall_specular }, 0.4f * 128, 0);
 	Material wall_material_with_normal(std::vector<Texture2D>{wall_diffuse, wall_specular, wall_normal }, 0.4f * 128, 0);
-	Mesh wall_mesh(square_position, square_indices, &square_normal, &square_texcoords, true);
 #pragma endregion
 
 #pragma region brick wall for parallax mapping
@@ -465,7 +464,6 @@ int main()
 	Texture2D bricks2_parallax("Image/bricks2_disp.jpg", "texture_parallax");
 
 	Material bricks2_material(std::vector<Texture2D>{bricks2_diffuse, bricks2_specular, bricks2_normal, bricks2_parallax}, 0.4f * 128, 0);
-	Mesh brick2_mesh(square_position, square_indices, &square_normal, &square_texcoords, true);
 #pragma endregion
 
 	Time::Init();
@@ -492,8 +490,6 @@ int main()
 	// 启用多重采样。在大多数OpenGL的驱动上，多重采样都是默认启用
 	glEnable(GL_MULTISAMPLE);
 
-	Mesh frame_buffer_mesh(square_vertices, square_indices);
-
 #pragma region 深度贴图帧缓冲
 	const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 	TexParams depth_tex_params = {
@@ -512,6 +508,14 @@ int main()
 		shadows.push_back(shadow);
 	}
 #pragma endregion
+	FrameBuffer frame_buffer(ScreenWidth, ScreenHeight);
+	TexParams frame_buffer_tex_params = {
+		{GL_TEXTURE_MIN_FILTER, GL_LINEAR},
+		{GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+	};
+	frame_buffer.AddTexture2D(GL_RGB, GL_UNSIGNED_BYTE, 0, Texture2D::DefaultParams);
+	frame_buffer.AddRenderBuffer();
+
 	bool use_box_outline = false;
 	bool active_skybox = true;
 	bool use_explode = false;
@@ -520,6 +524,7 @@ int main()
 	bool use_blinn = true;
 
 	bool light_follow_camera = false;
+	bool use_frame_buffer = false;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -531,7 +536,6 @@ int main()
 		ProcessInput(window);
 		fps_crtl->Update();
 		light_follow_camera = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
-			//light_follow_camera = ! light_follow_camera;
 		if (light_follow_camera)
 		{
 			lights[0]->position = camera->position;
@@ -539,15 +543,8 @@ int main()
 	
 		camera->FillUniformMatrices();
 
-		glEnable(GL_DEPTH_TEST);
 
-		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		// glClear函数清空屏幕的颜色缓冲，它接受一个缓冲位(Buffer Bit)来指定要清空的缓冲，可能的缓冲位有GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT
-		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
-		
+
 #pragma region 深度贴图
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -567,13 +564,24 @@ int main()
 			}
 		}
 #pragma endregion
-
-		// 解绑帧缓冲
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		// 此时场景的渲染结果已经输出到帧缓冲的附加纹理上了
+		GLObject::Unbind<FrameBuffer>();
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-
+		if (use_frame_buffer)
+		{
+			frame_buffer.BindSelf();
+			frame_buffer.UpdateViewport();
+		}
+		
+		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		// glClear函数清空屏幕的颜色缓冲，它接受一个缓冲位(Buffer Bit)来指定要清空的缓冲，可能的缓冲位有GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT
+		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
+		
 		glCullFace(GL_BACK);
+		
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
@@ -644,7 +652,7 @@ int main()
 			}
 		}
 #pragma endregion
-
+		/*
 #pragma region brickwall
 		glDisable(GL_CULL_FACE);
 		
@@ -659,7 +667,7 @@ int main()
 		phong_shader->Apply(wall_material);
 		wall_tf.position = glm::vec3(5, 0, -2);
 		phong_shader->Apply(wall_tf);
-		wall_mesh.Draw(*phong_shader);
+		square_mesh2.Draw(*phong_shader);
 		// 使用法线贴图
 		phong_TBN_shader->Use();
 		phong_TBN_shader->Apply(*camera, true, false);
@@ -671,7 +679,7 @@ int main()
 		//wall_tf.rotate_axis = glm::vec3(1, 0, 0);
 		//wall_tf.rotate_angle = -90;
 		phong_TBN_shader->Apply(wall_tf);
-		wall_mesh.Draw(*phong_TBN_shader);
+		square_mesh2.Draw(*phong_TBN_shader);
 #pragma endregion
 
 #pragma region bricks2 for parallax mapping
@@ -690,7 +698,7 @@ int main()
 		//wall_tf.rotate_axis = glm::vec3(1, 0, 0);
 		//wall_tf.rotate_angle = -90;
 		phong_parallax_shader->Apply(bricks2_tf);
-		wall_mesh.Draw(*phong_parallax_shader);
+		square_mesh2.Draw(*phong_parallax_shader);
 #pragma endregion
 
 #pragma region nanosuit
@@ -737,7 +745,7 @@ int main()
 			}
 		}
 #pragma endregion
-
+*/
 /*
 #pragma region box 实例化渲染
 		phong_instance_shader->Use();
@@ -835,19 +843,20 @@ int main()
 			glDepthFunc(GL_LESS);
 		}
 #pragma endregion
-		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-		/*
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+		GLObject::Unbind<TextureCubeMap>();
+		
 #pragma region 带透明度的物体
 		glDisable(GL_CULL_FACE);
 		std::vector<Object> objs(3);
 
-		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
-		objs.emplace(objs.end(), &grass_mesh, transform, grass_material);
+		Transform transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
+		objs.emplace(objs.end(), &square_mesh, transform, grass_material);
 
 		for (int i = 0; i < 2; i++)
 		{
 			transform = Transform(glm::vec3(0, 0, 4- i), glm::vec3(1.0f));
-			objs.emplace(objs.end(), &window_mesh, transform, window_material);
+			objs.emplace(objs.end(), &square_mesh, transform, window_material);
 		}
 
 		std::map<float, Object*> sorted;
@@ -866,7 +875,23 @@ int main()
 			it->second->Draw(*blend_shader);
 		}
 #pragma endregion
-*/
+
+		if (use_frame_buffer)
+		{
+			GLObject::Unbind<TextureCubeMap>();
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, ScreenWidth, ScreenHeight);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+
+			frame_buffer_shader->Use();
+			frame_buffer_shader->SetUniformInt("tex", 0);
+			glActiveTexture(GL_TEXTURE0);
+			frame_buffer.color_buffer->BindSelf();
+			//glBindTexture(GL_TEXTURE_2D, frame_buffer.color_buffer->GetID());
+			square_mesh.Draw(*frame_buffer_shader);
+		}
+
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
 		// glfwPollEvents函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数

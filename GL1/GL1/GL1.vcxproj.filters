@@ -158,5 +158,8 @@
     <ClInclude Include="PointShadow.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="GLObject.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -10,6 +10,14 @@ const std::vector<std::string> Texture2D::TextureTypes
 	"texture_parallax"
 };
 
+const TexParams Texture2D::DefaultParams = 
+{
+	{GL_TEXTURE_WRAP_S, GL_REPEAT},
+	{GL_TEXTURE_WRAP_T, GL_REPEAT},
+	{GL_TEXTURE_MIN_FILTER, GL_LINEAR},
+	{GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+};
+
 std::unordered_map<std::string, Texture2D> Texture2D::LoadedTextures;
 
 Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertical, bool mipmap): type(_type)
@@ -34,8 +42,8 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 
 Texture2D::Texture2D(int width, int height, GLenum format, void* data, GLenum data_type)
 {
-	glGenTextures(1, &ID);
-	Bind();
+	Generate();
+	BindSelf();
 
 	glTexImage2D(GLTarget(), 0, format, width, height, 0, format, data_type, data);
 }
@@ -76,8 +84,8 @@ void Texture2D::GenerateMipmap()
 
 void Texture2D::ToGL(int width, int height, int nChannel, unsigned char* img_data)
 {
-	glGenTextures(1, &ID);
-	Bind();
+	Generate();
+	BindSelf();
 
 	// 根据通道数使用相应的格式
 	GLenum format = GL_RGB;

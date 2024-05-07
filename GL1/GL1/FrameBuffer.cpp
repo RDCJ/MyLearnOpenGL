@@ -3,7 +3,7 @@
 FrameBuffer::FrameBuffer(int buffer_width, int buffer_height): buffer_width(buffer_width), buffer_height(buffer_height)
 {
 	// 创建一个帧缓冲对象
-	glGenFramebuffers(1, &ID);
+	Generate();
 }
 
 void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
@@ -19,7 +19,7 @@ void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level
 	else
 		attachment = GL_COLOR_ATTACHMENT0;
 
-	Bind();
+	BindSelf();
 	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
 	// glFramebufferTexture2D参数：
 	// target：帧缓冲的目标（绘制、读取或者两者皆有）
@@ -27,9 +27,9 @@ void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level
 	//	textarget：你希望附加的纹理类型
 	// texture：要附加的纹理id
 	//	level：mipmap的级别
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, color_buffer->GetID(), mipmap_level);
-	color_buffer->Unbind();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glFramebufferTexture2D(GLTarget(), attachment, GL_TEXTURE_2D, color_buffer->GetID(), mipmap_level);
+	color_buffer->UnbindSelf();
+	UnbindSelf();
 }
 
 void FrameBuffer::AddTextureCubMap(GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
@@ -44,13 +44,13 @@ void FrameBuffer::AddTextureCubMap(GLenum format, GLenum data_type, int mipmap_l
 	else
 		attachment = GL_COLOR_ATTACHMENT0;
 
-	Bind();
+	BindSelf();
 
-	glFramebufferTexture(GL_FRAMEBUFFER, attachment, cube_map_buffer->GetID(), mipmap_level);
+	glFramebufferTexture(GLTarget(), attachment, cube_map_buffer->GetID(), mipmap_level);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
-	cube_map_buffer->Unbind();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	cube_map_buffer->UnbindSelf();
+	UnbindSelf();
 }
 
 void FrameBuffer::AddRenderBuffer()
@@ -65,23 +65,17 @@ void FrameBuffer::AddRenderBuffer()
 	// 解绑
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// 将渲染缓冲对象附加到帧缓冲上
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+	glFramebufferRenderbuffer(GLTarget(), GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 	
 	CheckStatus();
 
 	// 解绑帧缓冲
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void FrameBuffer::Bind()
-{
-	// glBindFramebuffer: 绑定帧缓冲, 绑定到GL_FRAMEBUFFER目标之后，所有的读取和写入帧缓冲的操作将会影响当前绑定的帧缓冲
-	glBindFramebuffer(GL_FRAMEBUFFER, ID);
+	UnbindSelf();
 }
 
 void FrameBuffer::CheckStatus()
 {
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GLTarget()) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 	}
