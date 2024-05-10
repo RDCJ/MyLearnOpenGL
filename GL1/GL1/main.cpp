@@ -179,10 +179,6 @@ int main()
 	// 给camera创建一个uniform缓冲对象
 	camera->uniform_matrices.GenBuffer(2 * sizeof(glm::mat4), 0);
 
-	Model nanosuit("./Model/nanosuit_reflection/nanosuit.obj");
-	for (int i = 0; i < nanosuit.materials.size(); i++)
-		nanosuit.materials[i].shininess = 0.4f * 128;
-
 	std::vector<glm::vec3> square_position{
 		glm::vec3(-1, -1, 0), glm::vec3(1, -1, 0), glm::vec3(1, 1, 0), glm::vec3(-1, 1, 0)
 	};
@@ -217,6 +213,17 @@ int main()
 		skybox_img_paths[i] = "./Image/skybox/" + skybox_img_paths[i];
 	TextureCubeMap skybox_texture(skybox_img_paths);
 #pragma endregion
+
+	#pragma region nanosuit
+	Model nanosuit("./Model/nanosuit_reflection/nanosuit.obj");
+	for (int i = 0; i < nanosuit.materials.size(); i++)
+	{
+		nanosuit.materials[i].shininess = 0.4f * 128;
+		nanosuit.materials[i].environment_map = &skybox_texture;
+	}
+	#pragma endregion
+
+	
 
 #pragma region cube model
 	float vertices[] = {
@@ -524,7 +531,7 @@ int main()
 	bool use_blinn = true;
 
 	bool light_follow_camera = false;
-	bool use_frame_buffer = false;
+	bool use_frame_buffer = true;
 
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
@@ -542,8 +549,6 @@ int main()
 		}
 	
 		camera->FillUniformMatrices();
-
-
 
 #pragma region 深度贴图
 		glEnable(GL_DEPTH_TEST);
@@ -563,10 +568,10 @@ int main()
 				cube_mesh.Draw(*cube_map_depth_shader);
 			}
 		}
-#pragma endregion
 		GLObject::Unbind<FrameBuffer>();
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
+#pragma endregion
+
 		if (use_frame_buffer)
 		{
 			frame_buffer.BindSelf();
@@ -581,6 +586,7 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
 		glCullFace(GL_BACK);
+		
 		
 #pragma region box
 		for (int i = 0; i < 10; i++)
@@ -652,7 +658,8 @@ int main()
 			}
 		}
 #pragma endregion
-		/*
+
+		
 #pragma region brickwall
 		glDisable(GL_CULL_FACE);
 		
@@ -702,7 +709,6 @@ int main()
 #pragma endregion
 
 #pragma region nanosuit
-
 		Transform transform(glm::vec3(0, 0, 1), glm::vec3(0.15f));
 
 		if (use_explode)
@@ -745,7 +751,7 @@ int main()
 			}
 		}
 #pragma endregion
-*/
+
 /*
 #pragma region box 实例化渲染
 		phong_instance_shader->Use();
@@ -843,14 +849,12 @@ int main()
 			glDepthFunc(GL_LESS);
 		}
 #pragma endregion
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-		GLObject::Unbind<TextureCubeMap>();
 		
 #pragma region 带透明度的物体
 		glDisable(GL_CULL_FACE);
 		std::vector<Object> objs(3);
 
-		Transform transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
+		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
 		objs.emplace(objs.end(), &square_mesh, transform, grass_material);
 
 		for (int i = 0; i < 2; i++)
@@ -878,17 +882,13 @@ int main()
 
 		if (use_frame_buffer)
 		{
-			GLObject::Unbind<TextureCubeMap>();
-			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			GLObject::Unbind<FrameBuffer>();
 			glViewport(0, 0, ScreenWidth, ScreenHeight);
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_CULL_FACE);
 
 			frame_buffer_shader->Use();
-			frame_buffer_shader->SetUniformInt("tex", 0);
-			glActiveTexture(GL_TEXTURE0);
-			frame_buffer.color_buffer->BindSelf();
-			//glBindTexture(GL_TEXTURE_2D, frame_buffer.color_buffer->GetID());
+			frame_buffer_shader->Apply(*frame_buffer.color_buffer, "tex");
 			square_mesh.Draw(*frame_buffer_shader);
 		}
 

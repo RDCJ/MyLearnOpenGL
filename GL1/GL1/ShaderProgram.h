@@ -103,6 +103,20 @@ class ShaderProgram
 		/// <param name="shadow"></param>
 		/// <param name="texture_index"></param>
 		void Apply(Shadow& shadow, int texture_index);
+		/// <summary>
+		/// 设置纹理，自动分配纹理单元
+		/// </summary>
+		/// <param name="tex"></param>
+		/// <param name="name"></param>
+		void Apply(Texture& tex, std::string name);
+		/// <summary>
+		/// 设置纹理, 指定纹理单元
+		/// </summary>
+		/// <param name="tex"></param>
+		/// <param name="name"></param>
+		/// <param name="tex_unit"></param>
+		void Apply(Texture& tex, std::string name, GLenum tex_unit);
+
 #pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
 		{

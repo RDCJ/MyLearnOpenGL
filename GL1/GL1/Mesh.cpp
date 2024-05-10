@@ -95,6 +95,8 @@ void Mesh::Draw(ShaderProgram& shader)
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+	Texture::ClearAllBindTexture();
+
 }
 
 void Mesh::DrawInstance(ShaderProgram& shader, int num)
@@ -102,6 +104,7 @@ void Mesh::DrawInstance(ShaderProgram& shader, int num)
 	glBindVertexArray(VAO);
 	glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, num);
 	glBindVertexArray(0);
+	Texture::ClearAllBindTexture();
 }
 
 void Mesh::SetupMesh()

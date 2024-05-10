@@ -17,7 +17,7 @@ class Texture2D: public Texture
 
 		Texture2D(const char* image_path, std::string _type, bool flip_vertical=true, bool mipmap=true);
 
-		Texture2D(int width, int height, GLenum format, void* data, GLenum data_type);
+		Texture2D(int width, int height, GLenum format, void* data, GLenum data_type, const TexParams& params=TexParams());
 		/// <summary>
 		/// 返回全局的纹理储存中的目标纹理，如果尚未加载就先从文件加载到全局储存中再返回
 		/// </summary>

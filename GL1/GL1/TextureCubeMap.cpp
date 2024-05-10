@@ -25,6 +25,7 @@ TextureCubeMap::TextureCubeMap(std::vector<std::string>& img_paths)
 		stbi_image_free(img_data);
 	}
 	SetDefaultParameters();
+	UnbindSelf();
 }
 
 TextureCubeMap::TextureCubeMap(int width, int height, GLenum format, void* data, GLenum data_type)
@@ -35,6 +36,7 @@ TextureCubeMap::TextureCubeMap(int width, int height, GLenum format, void* data,
 	{
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, data_type, data);
 	}
+	UnbindSelf();
 }
 
 void TextureCubeMap::SetDefaultParameters()

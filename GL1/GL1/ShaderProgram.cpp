@@ -114,9 +114,7 @@ void ShaderProgram::Apply(TextureCubeMap& cube_map)
 {
 	this->SetUniformBool("use_cube_map", true);
 
-	this->SetUniformInt("cube_map", 0);
-	glActiveTexture(GL_TEXTURE0);
-	cube_map.BindSelf();
+	this->Apply(cube_map, "cube_map");
 }
 
 void ShaderProgram::Apply(UniformBuffer& uniform_buffer)
@@ -150,19 +148,34 @@ void ShaderProgram::Apply(Shadow& shadow, int texture_index)
 	if (shadow.light->type == LightType::Point)
 	{
 		this->SetUniformFloat("z_far", shadow.camera->Z_Far);
-		this->SetUniformInt("cube_map_shadow[" + std::to_string(texture_index) + "]", 3 + texture_index);
-		glActiveTexture(GL_TEXTURE3 + texture_index);
-		shadow.depth_map_buffer.cube_map_buffer->BindSelf();
+		this->Apply(*shadow.depth_map_buffer.cube_map_buffer, "cube_map_shadow[" + std::to_string(texture_index) + "]");
 	}
+}
+
+void ShaderProgram::Apply(Texture& tex, std::string name)
+{
+	GLenum unit = Texture::GetAvaliableTexUnit();
+	this->Apply(tex, name, unit);
+}
+
+void ShaderProgram::Apply(Texture& tex, std::string name, GLenum tex_unit)
+{
+	this->SetUniformInt(name, tex_unit - Texture::TexUnitMin);
+	tex.ActiveBind(tex_unit);
 }
 
 void ShaderProgram::Apply(Material& material)
 {
 	if (material.cube_map != nullptr)
 	{
-		this->SetUniformInt("cube_map", 0);
-		glActiveTexture(GL_TEXTURE0);
-		material.cube_map->BindSelf();
+		this->Apply(*material.cube_map, "cube_map");
+	}
+
+	if (material.environment_map != nullptr)
+	{
+		this->SetUniformBool("use_cube_map", true);
+
+		this->Apply(*material.environment_map, "cube_map");
 	}
 
 	// 绑定纹理
@@ -174,11 +187,8 @@ void ShaderProgram::Apply(Material& material)
 		std::string& type = material.textures[i].type;
 		unsigned int idx = texture_count[type];
 		// 纹理命名规则：material.texture_{type}{idx}
-		this->SetUniformInt("material." + type + std::to_string(idx), i + 1);
+		this->Apply(material.textures[i], "material." + type + std::to_string(idx));
 		texture_count[type] = idx + 1;
-		// 在绑定之前激活相应的纹理单元
-		glActiveTexture(GL_TEXTURE0 + i + 1);
-		material.textures[i].BindSelf();
 	}
 	this->SetUniformFloat("material.shininess", material.shininess);
 	this->SetUniformFloat("material.refract_ratio", material.refract_ratio);

@@ -9,9 +9,7 @@ FrameBuffer::FrameBuffer(int buffer_width, int buffer_height): buffer_width(buff
 void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
 {
 	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
-	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL, data_type);
-
-	color_buffer->SetParameters(params);
+	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL, data_type, params);
 
 	GLenum attachment;
 	if (format == GL_DEPTH_COMPONENT)
@@ -20,6 +18,7 @@ void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level
 		attachment = GL_COLOR_ATTACHMENT0;
 
 	BindSelf();
+	color_buffer->BindSelf();
 	// 将纹理附加到帧缓冲上， 之后所有的渲染指令将会写入到这个纹理中
 	// glFramebufferTexture2D参数：
 	// target：帧缓冲的目标（绘制、读取或者两者皆有）
@@ -55,6 +54,7 @@ void FrameBuffer::AddTextureCubMap(GLenum format, GLenum data_type, int mipmap_l
 
 void FrameBuffer::AddRenderBuffer()
 {
+	BindSelf();
 	// 创建一个渲染缓冲对象
 	glGenRenderbuffers(1, &RBO);
 	// 绑定渲染缓冲对象rbo到GL_RENDERBUFFER，让之后所有的渲染缓冲操作影响当前的rbo

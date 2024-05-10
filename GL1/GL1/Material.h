@@ -7,6 +7,7 @@ class Material
 {
 	public:
 		std::vector<Texture2D> textures;
+		TextureCubeMap* environment_map = nullptr;
 		TextureCubeMap* cube_map = nullptr;
 
 		float shininess;

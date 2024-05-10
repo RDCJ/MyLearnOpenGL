@@ -29,10 +29,13 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 
 	if (img_data)
 	{
+		Generate();
+		BindSelf();
 		ToGL(width, height, nrChannels, img_data);
 		if (mipmap)
 			GenerateMipmap();
 		SetDefaultParameters();
+		UnbindSelf();
 	}
 	else
 		std::cout<< "Texture failed to load at path: " << image_path << std::endl;
@@ -40,12 +43,13 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 	stbi_image_free(img_data);
 }
 
-Texture2D::Texture2D(int width, int height, GLenum format, void* data, GLenum data_type)
+Texture2D::Texture2D(int width, int height, GLenum format, void* data, GLenum data_type, const TexParams& params)
 {
 	Generate();
 	BindSelf();
-
 	glTexImage2D(GLTarget(), 0, format, width, height, 0, format, data_type, data);
+	SetParameters(params);
+	UnbindSelf();
 }
 
 Texture2D Texture2D::GetTexture2D(const char* file_name, const std::string& model_directory, std::string _type, bool flip_vertical)
@@ -84,9 +88,6 @@ void Texture2D::GenerateMipmap()
 
 void Texture2D::ToGL(int width, int height, int nChannel, unsigned char* img_data)
 {
-	Generate();
-	BindSelf();
-
 	// 根据通道数使用相应的格式
 	GLenum format = GL_RGB;
 	switch (nChannel)
