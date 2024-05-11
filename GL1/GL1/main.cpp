@@ -170,6 +170,7 @@ int main()
 	ShaderProgram* skybox_depth_shader = new ShaderProgram("./Shader/skybox.vert", "./Shader/skybox_depth.frag");
 	ShaderProgram* phong_TBN_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_TBN.frag");
 	ShaderProgram* phong_parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_ParallaxMapping.frag");
+	ShaderProgram* phong_CubeMapShadow_Parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Binn_Phong_CubeMapShadow_ParalaxMapping.frag");
 
 	Material empty_material;
 
@@ -471,6 +472,23 @@ int main()
 	Texture2D bricks2_parallax("Image/bricks2_disp.jpg", "texture_parallax");
 
 	Material bricks2_material(std::vector<Texture2D>{bricks2_diffuse, bricks2_specular, bricks2_normal, bricks2_parallax}, 0.4f * 128, 0);
+
+	std::vector<glm::vec3> bricks2_pos = {
+		glm::vec3(7, 2.5, -2), glm::vec3(9, 2.5, -2),
+		glm::vec3(8, 1.5, -2), glm::vec3(8, 3.5, -2),
+		glm::vec3(7, 2.5, 0), glm::vec3(9, 2.5, 0),
+		glm::vec3(8, 1.5, 0), glm::vec3(8, 3.5, 0)
+	};
+	std::vector<glm::vec3> bricks2_rotate_axis = {
+		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
+		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
+		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
+		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0)
+	};
+	std::vector<float> bricks2_rotate_angle = {
+		90, -90, -90, 90,
+		90, -90, -90, 90
+	};
 #pragma endregion
 
 	Time::Init();
@@ -566,6 +584,12 @@ int main()
 				Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
 				cube_map_depth_shader->Apply(tf);
 				cube_mesh.Draw(*cube_map_depth_shader);
+			}
+			for (int i = 0; i < 8; i++)
+			{
+				Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i], bricks2_rotate_angle[i]);
+				cube_map_depth_shader->Apply(bricks2_tf);
+				square_mesh2.Draw(*cube_map_depth_shader);
 			}
 		}
 		GLObject::Unbind<FrameBuffer>();
@@ -692,20 +716,23 @@ int main()
 #pragma region bricks2 for parallax mapping
 		glDisable(GL_CULL_FACE);
 
-		Transform bricks2_tf;
-
-		phong_parallax_shader->Use();
-		phong_parallax_shader->Apply(*camera, true, false);
-		phong_parallax_shader->Apply(lights);
-		phong_parallax_shader->SetUniformBool("use_cube_map", false);
-		phong_parallax_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_parallax_shader->SetUniformFloat("parallax_height_scale", 0.1);
-		phong_parallax_shader->Apply(bricks2_material);
-		bricks2_tf.position = glm::vec3(7.5, 2.5, -2);
-		//wall_tf.rotate_axis = glm::vec3(1, 0, 0);
-		//wall_tf.rotate_angle = -90;
-		phong_parallax_shader->Apply(bricks2_tf);
-		square_mesh2.Draw(*phong_parallax_shader);
+		phong_CubeMapShadow_Parallax_shader->Use();
+		phong_CubeMapShadow_Parallax_shader->Apply(*camera, true, false);
+		phong_CubeMapShadow_Parallax_shader->Apply(lights);
+		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_cube_map", false);
+		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_blinn", use_blinn);
+		phong_CubeMapShadow_Parallax_shader->SetUniformFloat("parallax_height_scale", 0.1);
+		for (int i = 0; i < 8; i++)
+		{
+			Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i], bricks2_rotate_angle[i]);
+			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_tf);
+			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_material);
+			for (int j = 0; j < lights.size(); j++)
+			{
+				phong_CubeMapShadow_Parallax_shader->Apply(*shadows[j], j);
+			}
+			square_mesh2.Draw(*phong_CubeMapShadow_Parallax_shader);
+		}
 #pragma endregion
 
 #pragma region nanosuit
