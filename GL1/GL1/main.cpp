@@ -88,11 +88,59 @@ void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 static std::vector<Light*> CreateLight()
 {
+	
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(0.0f,  0.0f,  2.0f),
+		glm::vec3(8, 2.5, -1),
+		glm::vec3(7.5, 2.5, -0.5),
+		glm::vec3(8, 2, 0),
+		glm::vec3(8.5, 2, 0.5)
+	};
+
+	std::vector<glm::vec3> lightColors = {
+		glm::vec3(20.0f, 20.0f, 20.0f),
+		glm::vec3(0.1f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.2f),
+		glm::vec3(0.0f, 0.1f, 0.0f)
+	};
+
+	std::vector<Light*> lights = std::vector<Light*>();
+	for (int i = 0; i < 5; i++)
+	{
+		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
+		lights.push_back(light);
+	}
+	lights[0]->ambient = glm::vec3(0.4f);
+	lights[0]->diffuse = glm::vec3(1);
+	lights[0]->specular = glm::vec3(1);
+
+	for (int i = 1; i < 5; i++)
+	{
+		lights[i]->ambient = 0.001f * lightColors[i - 1];
+		lights[i]->diffuse = lightColors[i - 1];
+		lights[i]->specular = lightColors[i - 1];
+		lights[i]->linear = 0.2;
+		lights[i]->quadratic = 0.06;
+	}
+	return lights;
+	//Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
+	//Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
+	//lights.push_back(directional_light);
+	//lights.push_back(spot_light);
+	//for (Light* light : lights)
+	//{
+	//	light->ambient = glm::vec3(0.4f);
+	//	light->diffuse = glm::vec3(1);
+	//	light->specular = glm::vec3(1);
+	//}
+	//directional_light->diffuse = glm::vec3(1);
+
+	/*
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.0f, 0.0f, 2.0f),
 		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f,  2.0f, -12.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
+		glm::vec3(-4.0f, 2.0f, -12.0f),
+		glm::vec3(0.0f, 0.0f, -3.0f)
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
@@ -101,12 +149,8 @@ static std::vector<Light*> CreateLight()
 		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
 		lights.push_back(light);
 	}
-
 	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
 	Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
-
-	//lights.push_back(directional_light);
-	//lights.push_back(spot_light);
 
 	for (Light* light : lights)
 	{
@@ -115,8 +159,8 @@ static std::vector<Light*> CreateLight()
 		light->specular = glm::vec3(1);
 	}
 	directional_light->diffuse = glm::vec3(1);
-	return lights;
-	//directional_light->diffuse = glm::vec3(1.0, 1.0, 0);
+	return lights;*/
+		
 }
 
 int main() 
@@ -477,18 +521,23 @@ int main()
 		glm::vec3(7, 2.5, -2), glm::vec3(9, 2.5, -2),
 		glm::vec3(8, 1.5, -2), glm::vec3(8, 3.5, -2),
 		glm::vec3(7, 2.5, 0), glm::vec3(9, 2.5, 0),
-		glm::vec3(8, 1.5, 0), glm::vec3(8, 3.5, 0)
+		glm::vec3(8, 1.5, 0), glm::vec3(8, 3.5, 0),
+		glm::vec3(7, 2.5, 2), glm::vec3(9, 2.5, 2),
+		glm::vec3(8, 1.5, 2), glm::vec3(8, 3.5, 2),
+		glm::vec3(7, 2.5, 4), glm::vec3(9, 2.5, 4),
+		glm::vec3(8, 1.5, 4), glm::vec3(8, 3.5, 4),
+		glm::vec3(7, 2.5, 6), glm::vec3(9, 2.5, 6),
+		glm::vec3(8, 1.5, 6), glm::vec3(8, 3.5, 6)
 	};
 	std::vector<glm::vec3> bricks2_rotate_axis = {
-		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
-		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
 		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
 		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0)
 	};
 	std::vector<float> bricks2_rotate_angle = {
-		90, -90, -90, 90,
 		90, -90, -90, 90
 	};
+
+	int bricks2_count = bricks2_pos.size();
 #pragma endregion
 
 	Time::Init();
@@ -542,7 +591,7 @@ int main()
 	frame_buffer.AddRenderBuffer();
 
 	bool use_box_outline = false;
-	bool active_skybox = true;
+	bool active_skybox = false;
 	bool use_explode = false;
 	bool draw_normal = false;
 	bool rock_move = true;
@@ -585,9 +634,9 @@ int main()
 				cube_map_depth_shader->Apply(tf);
 				cube_mesh.Draw(*cube_map_depth_shader);
 			}
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < bricks2_count; i++)
 			{
-				Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i], bricks2_rotate_angle[i]);
+				Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i % 4], bricks2_rotate_angle[i % 4]);
 				cube_map_depth_shader->Apply(bricks2_tf);
 				square_mesh2.Draw(*cube_map_depth_shader);
 			}
@@ -603,7 +652,7 @@ int main()
 		}
 		
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0, 0, 0, 1.0f);
 		// glClear函数清空屏幕的颜色缓冲，它接受一个缓冲位(Buffer Bit)来指定要清空的缓冲，可能的缓冲位有GL_COLOR_BUFFER_BIT，GL_DEPTH_BUFFER_BIT和GL_STENCIL_BUFFER_BIT
 		// 每次渲染迭代之前清除深度缓冲（否则前一帧的深度信息仍然保存在缓冲中）
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -683,7 +732,6 @@ int main()
 		}
 #pragma endregion
 
-		
 #pragma region brickwall
 		glDisable(GL_CULL_FACE);
 		
@@ -722,9 +770,9 @@ int main()
 		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_cube_map", false);
 		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_blinn", use_blinn);
 		phong_CubeMapShadow_Parallax_shader->SetUniformFloat("parallax_height_scale", 0.1);
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < bricks2_count; i++)
 		{
-			Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i], bricks2_rotate_angle[i]);
+			Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i % 4], bricks2_rotate_angle[i % 4]);
 			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_tf);
 			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_material);
 			for (int j = 0; j < lights.size(); j++)
