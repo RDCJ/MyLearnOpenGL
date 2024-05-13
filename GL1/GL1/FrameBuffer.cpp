@@ -6,13 +6,13 @@ FrameBuffer::FrameBuffer(int buffer_width, int buffer_height): buffer_width(buff
 	Generate();
 }
 
-void FrameBuffer::AddTexture2D(GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
+void FrameBuffer::AddTexture2D(GLenum internal_format, GLenum format, GLenum data_type, int mipmap_level, const TexParams& params)
 {
 	// 我们给纹理的data参数传递了NULL, 对于这个纹理，我们仅仅分配了内存而没有填充它。填充这个纹理将会在我们渲染到帧缓冲之后来进行
-	color_buffer = new Texture2D(buffer_width, buffer_height, format, NULL, data_type, params);
+	color_buffer = new Texture2D(buffer_width, buffer_height, internal_format, format, NULL, data_type, params);
 
 	GLenum attachment;
-	if (format == GL_DEPTH_COMPONENT)
+	if (internal_format == GL_DEPTH_COMPONENT)
 		attachment = GL_DEPTH_ATTACHMENT;
 	else
 		attachment = GL_COLOR_ATTACHMENT0;

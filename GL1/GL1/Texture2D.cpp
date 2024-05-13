@@ -43,11 +43,11 @@ Texture2D::Texture2D(const char* image_path, std::string _type, bool flip_vertic
 	stbi_image_free(img_data);
 }
 
-Texture2D::Texture2D(int width, int height, GLenum format, void* data, GLenum data_type, const TexParams& params)
+Texture2D::Texture2D(int width, int height, GLenum internal_format, GLenum format, void* data, GLenum data_type, const TexParams& params)
 {
 	Generate();
 	BindSelf();
-	glTexImage2D(GLTarget(), 0, format, width, height, 0, format, data_type, data);
+	glTexImage2D(GLTarget(), 0, internal_format, width, height, 0, format, data_type, data);
 	SetParameters(params);
 	UnbindSelf();
 }

@@ -9,7 +9,7 @@ class FrameBuffer: public GLObject
 	public:
 		FrameBuffer(){ }
 		FrameBuffer(int buffer_width, int buffer_height);
-		void AddTexture2D(GLenum format, GLenum data_type, int mipmap_level= 0, const TexParams& params=TexParams());
+		void AddTexture2D(GLenum internal_format, GLenum format, GLenum data_type, int mipmap_level= 0, const TexParams& params=TexParams());
 		void AddTextureCubMap(GLenum format, GLenum data_type, int mipmap_level = 0, const TexParams& params = TexParams());
 		void AddRenderBuffer();
 		/// <summary>

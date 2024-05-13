@@ -91,17 +91,17 @@ static std::vector<Light*> CreateLight()
 	
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(0.0f,  0.0f,  2.0f),
-		glm::vec3(8, 2.5, -1),
-		glm::vec3(7.5, 2.5, -0.5),
-		glm::vec3(8, 2, 0),
-		glm::vec3(8.5, 2, 0.5)
+		glm::vec3(8, 2.5, -2),
+		glm::vec3(1, 2.5, -9),
+		glm::vec3(1, 0.5, -2),
+		glm::vec3(3, 1, -4)
 	};
 
 	std::vector<glm::vec3> lightColors = {
 		glm::vec3(20.0f, 20.0f, 20.0f),
-		glm::vec3(0.1f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.2f),
-		glm::vec3(0.0f, 0.1f, 0.0f)
+		glm::vec3(10.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 10.0f),
+		glm::vec3(0.0f, 10.0f, 0.0f)
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
@@ -123,44 +123,6 @@ static std::vector<Light*> CreateLight()
 		lights[i]->quadratic = 0.06;
 	}
 	return lights;
-	//Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
-	//Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
-	//lights.push_back(directional_light);
-	//lights.push_back(spot_light);
-	//for (Light* light : lights)
-	//{
-	//	light->ambient = glm::vec3(0.4f);
-	//	light->diffuse = glm::vec3(1);
-	//	light->specular = glm::vec3(1);
-	//}
-	//directional_light->diffuse = glm::vec3(1);
-
-	/*
-	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.0f, 0.0f, 2.0f),
-		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f, 2.0f, -12.0f),
-		glm::vec3(0.0f, 0.0f, -3.0f)
-	};
-
-	std::vector<Light*> lights = std::vector<Light*>();
-	for (int i = 0; i < 2; i++)
-	{
-		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
-		lights.push_back(light);
-	}
-	Light* spot_light = Light::CreateSpot(glm::vec3(0, 2, 0), glm::vec3(-0.2f, -1.0f, -0.3f), 12.5f, 20.0f);
-	Light* directional_light = Light::CreateDirectional(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(2.0f, -4.0f, 1.0f));
-
-	for (Light* light : lights)
-	{
-		light->ambient = glm::vec3(0.4f);
-		light->diffuse = glm::vec3(1);
-		light->specular = glm::vec3(1);
-	}
-	directional_light->diffuse = glm::vec3(1);
-	return lights;*/
-		
 }
 
 int main() 
@@ -215,6 +177,7 @@ int main()
 	ShaderProgram* phong_TBN_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_TBN.frag");
 	ShaderProgram* phong_parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_ParallaxMapping.frag");
 	ShaderProgram* phong_CubeMapShadow_Parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Binn_Phong_CubeMapShadow_ParalaxMapping.frag");
+	ShaderProgram* HDR_tex_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Reinhard_Tone_Mapping.frag");
 
 	Material empty_material;
 
@@ -582,12 +545,17 @@ int main()
 		shadows.push_back(shadow);
 	}
 #pragma endregion
+	bool use_hdr = true;
+
 	FrameBuffer frame_buffer(ScreenWidth, ScreenHeight);
-	TexParams frame_buffer_tex_params = {
-		{GL_TEXTURE_MIN_FILTER, GL_LINEAR},
-		{GL_TEXTURE_MAG_FILTER, GL_LINEAR}
-	};
-	frame_buffer.AddTexture2D(GL_RGB, GL_UNSIGNED_BYTE, 0, Texture2D::DefaultParams);
+	if (use_hdr)
+	{
+		frame_buffer.AddTexture2D(GL_RGB16F, GL_RGB, GL_FLOAT, 0, Texture2D::DefaultParams);
+	}
+	else
+	{
+		frame_buffer.AddTexture2D(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, Texture2D::DefaultParams);
+	}
 	frame_buffer.AddRenderBuffer();
 
 	bool use_box_outline = false;
@@ -612,7 +580,7 @@ int main()
 		light_follow_camera = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
 		if (light_follow_camera)
 		{
-			lights[0]->position = camera->position;
+			lights[1]->position = camera->position;
 		}
 	
 		camera->FillUniformMatrices();
@@ -962,11 +930,21 @@ int main()
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_CULL_FACE);
 
-			frame_buffer_shader->Use();
-			frame_buffer_shader->Apply(*frame_buffer.color_buffer, "tex");
-			square_mesh.Draw(*frame_buffer_shader);
+			if (use_hdr)
+			{
+				HDR_tex_shader->Use();
+				HDR_tex_shader->Apply(*frame_buffer.color_buffer, "tex");
+				HDR_tex_shader->SetUniformFloat("exposure", 1.0);
+				square_mesh.Draw(*HDR_tex_shader);
+			}
+			else
+			{
+				frame_buffer_shader->Use();
+				frame_buffer_shader->Apply(*frame_buffer.color_buffer, "tex");
+				square_mesh.Draw(*frame_buffer_shader);
+			}
 		}
-
+		Texture::ClearAllBindTexture();
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
 		// glfwPollEvents函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数
