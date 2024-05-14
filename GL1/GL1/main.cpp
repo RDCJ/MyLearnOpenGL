@@ -178,6 +178,9 @@ int main()
 	ShaderProgram* phong_parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Blinn_Phong_ParallaxMapping.frag");
 	ShaderProgram* phong_CubeMapShadow_Parallax_shader = new ShaderProgram("./Shader/MVP_TBN.vert", "./Shader/Binn_Phong_CubeMapShadow_ParalaxMapping.frag");
 	ShaderProgram* HDR_tex_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Reinhard_Tone_Mapping.frag");
+	ShaderProgram* brightness_extract_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Brightness_Extract.frag");
+	ShaderProgram* gaussian_blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Gaussian_Blur.frag");
+	ShaderProgram* hdr_bloom_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/HDR_Bloom.frag");
 
 	Material empty_material;
 
@@ -546,7 +549,6 @@ int main()
 	}
 #pragma endregion
 	bool use_hdr = true;
-
 	FrameBuffer frame_buffer(ScreenWidth, ScreenHeight);
 	if (use_hdr)
 	{
@@ -557,6 +559,16 @@ int main()
 		frame_buffer.AddTexture2D(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, Texture2D::DefaultParams);
 	}
 	frame_buffer.AddRenderBuffer();
+
+	bool use_bloom = true;
+	int bloom_count = 10;
+	std::vector<FrameBuffer> bloom_buffer;
+	for (int i = 0; i < 2; i++)
+	{
+		bloom_buffer.emplace_back(ScreenWidth, ScreenHeight);
+		bloom_buffer[i].AddTexture2D(GL_RGB16F, GL_RGB, GL_FLOAT, 0, Texture2D::DefaultParams);
+	}
+	
 
 	bool use_box_outline = false;
 	bool active_skybox = false;
@@ -923,19 +935,59 @@ int main()
 		}
 #pragma endregion
 
+
+
 		if (use_frame_buffer)
 		{
-			GLObject::Unbind<FrameBuffer>();
-			glViewport(0, 0, ScreenWidth, ScreenHeight);
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_CULL_FACE);
+			if (use_bloom)
+			{
+				// 提取高亮区域
+				bloom_buffer[1].BindSelf();
+				bloom_buffer[1].UpdateViewport();
+				brightness_extract_shader->Use();
+				brightness_extract_shader->Apply(*frame_buffer.color_buffer, "tex");
+				square_mesh.Draw(*brightness_extract_shader);
 
+				// 模糊
+				for (int i = 0; i < bloom_count; i++)
+				{
+					bloom_buffer[i % 2].BindSelf();
+					bloom_buffer[i % 2].UpdateViewport();
+					gaussian_blur_shader->Use();
+					gaussian_blur_shader->Apply(*bloom_buffer[(i + 1) % 2].color_buffer, "tex");
+					gaussian_blur_shader->SetUniformBool("horizontal", i % 2 == 0);
+					square_mesh.Draw(*gaussian_blur_shader);
+					Texture::ClearAllBindTexture();
+				}
+				//GLObject::Unbind<FrameBuffer>();
+				//glViewport(0, 0, ScreenWidth, ScreenHeight);
+				//HDR_tex_shader->Use();
+				//HDR_tex_shader->Apply(*bloom_buffer[(bloom_count - 1) % 2].color_buffer, "tex");
+				//HDR_tex_shader->SetUniformFloat("exposure", 1.0);
+				//square_mesh.Draw(*HDR_tex_shader);
+			}
+
+			GLObject::Unbind<FrameBuffer>();
+			glViewport(0, 0, ScreenWidth, ScreenHeight);
 			if (use_hdr)
 			{
-				HDR_tex_shader->Use();
-				HDR_tex_shader->Apply(*frame_buffer.color_buffer, "tex");
-				HDR_tex_shader->SetUniformFloat("exposure", 1.0);
-				square_mesh.Draw(*HDR_tex_shader);
+				if (use_bloom)
+				{
+					hdr_bloom_shader->Use();
+					hdr_bloom_shader->Apply(*frame_buffer.color_buffer, "tex");
+					hdr_bloom_shader->Apply(*bloom_buffer[(bloom_count - 1) % 2].color_buffer, "bloom_tex");
+					hdr_bloom_shader->SetUniformFloat("exposure", 0.6);
+					square_mesh.Draw(*hdr_bloom_shader);
+				}
+				else
+				{
+					HDR_tex_shader->Use();
+					HDR_tex_shader->Apply(*frame_buffer.color_buffer, "tex");
+					HDR_tex_shader->SetUniformFloat("exposure", 1.0);
+					square_mesh.Draw(*HDR_tex_shader);
+				}
 			}
 			else
 			{
