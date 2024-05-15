@@ -41,6 +41,11 @@ class FrameBuffer: public GLObject
 		Texture2D* color_buffer = nullptr;
 		TextureCubeMap* cube_map_buffer = nullptr;
 
+		void BindTexture2D(Texture2D texture, GLenum attachment, int mipmap_level)
+		{
+			glFramebufferTexture2D(GLTarget(), attachment, GL_TEXTURE_2D, texture.GetID(), mipmap_level);
+		}
+
 	private:
 		/// <summary>
 		/// ‰÷»æª∫≥Â∂‘œÛ

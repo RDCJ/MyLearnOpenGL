@@ -17,6 +17,7 @@
 #include "FrameBuffer.h"
 #include "FPSController.h"
 #include "OrthoCamera.h"
+#include "GBuffer.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -98,10 +99,10 @@ static std::vector<Light*> CreateLight()
 	};
 
 	std::vector<glm::vec3> lightColors = {
-		glm::vec3(20.0f, 20.0f, 20.0f),
-		glm::vec3(10.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 10.0f),
-		glm::vec3(0.0f, 10.0f, 0.0f)
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::vec3(1.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f)
 	};
 
 	std::vector<Light*> lights = std::vector<Light*>();
@@ -181,6 +182,7 @@ int main()
 	ShaderProgram* brightness_extract_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Brightness_Extract.frag");
 	ShaderProgram* gaussian_blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Gaussian_Blur.frag");
 	ShaderProgram* hdr_bloom_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/HDR_Bloom.frag");
+	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/GBuffer.frag");
 
 	Material empty_material;
 
@@ -548,27 +550,8 @@ int main()
 		shadows.push_back(shadow);
 	}
 #pragma endregion
-	bool use_hdr = true;
-	FrameBuffer frame_buffer(ScreenWidth, ScreenHeight);
-	if (use_hdr)
-	{
-		frame_buffer.AddTexture2D(GL_RGB16F, GL_RGB, GL_FLOAT, 0, Texture2D::DefaultParams);
-	}
-	else
-	{
-		frame_buffer.AddTexture2D(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 0, Texture2D::DefaultParams);
-	}
-	frame_buffer.AddRenderBuffer();
 
-	bool use_bloom = true;
-	int bloom_count = 10;
-	std::vector<FrameBuffer> bloom_buffer;
-	for (int i = 0; i < 2; i++)
-	{
-		bloom_buffer.emplace_back(ScreenWidth, ScreenHeight);
-		bloom_buffer[i].AddTexture2D(GL_RGB16F, GL_RGB, GL_FLOAT, 0, Texture2D::DefaultParams);
-	}
-	
+	GBuffer g_buffer(ScreenWidth, ScreenHeight);
 
 	bool use_box_outline = false;
 	bool active_skybox = false;
@@ -596,7 +579,34 @@ int main()
 		}
 	
 		camera->FillUniformMatrices();
+		
+		g_buffer.BindSelf();
+		g_buffer.UpdateViewport();
+		GLuint attachments1[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+		glDrawBuffers(3, attachments1);
+		glClearColor(0, 0, 0, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+		Transform box_tf(glm::vec3(0, 0, 1), glm::vec3(0.1));
+		GBuffer_shader->Use();
+		GBuffer_shader->Apply(box_tf);
+		GBuffer_shader->Apply(*camera, true, false);
+		GBuffer_shader->Apply(cube_material);
+		cube_mesh.Draw(*GBuffer_shader);
+		//nanosuit.Draw(*GBuffer_shader);
+		Texture::ClearAllBindTexture();
+
+		//GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
+		//glDrawBuffers(1, attachments2);
+
+		GLObject::Unbind<FrameBuffer>();
+		glViewport(0, 0, ScreenWidth, ScreenHeight);
+		frame_buffer_shader->Use();
+		frame_buffer_shader->Apply(g_buffer.gNormal, "tex");
+		square_mesh.Draw(*frame_buffer_shader);
+		Texture::ClearAllBindTexture();
+
+		/*
 #pragma region 深度贴图
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -624,12 +634,6 @@ int main()
 		GLObject::Unbind<FrameBuffer>();
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
 #pragma endregion
-
-		if (use_frame_buffer)
-		{
-			frame_buffer.BindSelf();
-			frame_buffer.UpdateViewport();
-		}
 		
 		// glClearColor设置清空屏幕所用的颜色。当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色
 		glClearColor(0, 0, 0, 1.0f);
@@ -639,8 +643,7 @@ int main()
 		// glClearColor函数是一个状态设置函数，而glClear函数则是一个状态使用的函数，它使用了当前的状态来获取应该清除为的颜色
 		
 		glCullFace(GL_BACK);
-		
-		
+
 #pragma region box
 		for (int i = 0; i < 10; i++)
 		{
@@ -648,25 +651,6 @@ int main()
 			// 启用深度测试，需要开启GL_DEPTH_TEST
 			glEnable(GL_DEPTH_TEST);
 
-			if (use_box_outline)
-			{
-				// 启用模板测试
-				glEnable(GL_STENCIL_TEST);
-				// 设置测试通过或失败时的行为
-				// 第一个参数：模板测试失败时采取的行为, 
-				// 第二个参数：模板测试通过，但深度测试失败时采取的行为, 
-				// 第三个参数：模板测试和深度测试都通过时采取的行为
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-				// 设置模板函数
-				// 第一个参数：设置模板测试函数(Stencil Test Function)。这个测试函数将会应用到已储存的模板值上和glStencilFunc函数的ref值上。
-				//		可用的选项有：GL_NEVER、GL_LESS、GL_LEQUAL、GL_GREATER、GL_GEQUAL、GL_EQUAL、GL_NOTEQUAL和GL_ALWAYS
-				// 第二个参数：设置了模板测试的参考值。模板缓冲的内容将会与这个值进行比较
-				// 第三个参数：设置一个掩码，它将会与参考值和储存的模板值在测试比较它们之前进行与(AND)运算。初始情况下所有位都为1
-				glStencilFunc(GL_ALWAYS, 1, 0xFF);
-				// 设置模板缓冲更新前的掩码，它会与将要写入缓冲的模板值进行与(AND)运算
-				glStencilMask(0xFF);
-			}
-			
 			float angle = 29 * i;
 			Transform tf(cubePositions[i], glm::vec3(1), glm::vec3(1.0f, 0.3f, 0.5f), angle);
 			// 更新一个uniform之前你必须先使用shader程序（调用glUseProgram)，因为它是在当前激活的着色器程序中设置uniform的
@@ -685,81 +669,6 @@ int main()
 			////glDrawArrays函数第一个参数是我们打算绘制的OpenGL图元的类型。第二个参数指定了顶点数组的起始索引。最后一个参数指定我们打算绘制多少个顶点
 			//glDrawArrays(GL_TRIANGLES, 0, 36);
 			cube_mesh.Draw(*phong_cube_map_shadow_shader);
-
-			if (use_box_outline)
-			{
-				// 使用GL_ALWAYS模板测试函数，我们保证了片段永远会通过模板测试，在绘制片段的地方，模板缓冲会被更新为参考值1
-				// 模板函数设置为GL_NOTEQUAL：当前模板缓冲值不为1的片元才能通过模板测试
-				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-				// 将掩码值设为0， 禁止模板缓冲更新
-				glStencilMask(0x00);
-				glDisable(GL_DEPTH_TEST);
-
-				tf.scale = glm::vec3(1.05);
-				outline_shader->Use();
-				outline_shader->Apply(tf);
-				outline_shader->Apply(*camera, true);
-				outline_shader->SetUniformVec3("color", glm::vec3(0, 0.1f * (i + 1), 0));
-				cube_mesh.Draw(*outline_shader);
-
-				// glStencilMask(0x00)不仅会阻止模板缓冲的写入，也会阻止其清空(glClear(stencil_buffer)无效)
-				// 因此需要重设为0xFF
-				glStencilMask(0xFF);
-				glEnable(GL_DEPTH_TEST);
-				// 关闭模板测试
-				glDisable(GL_STENCIL_TEST);
-			}
-		}
-#pragma endregion
-
-#pragma region brickwall
-		glDisable(GL_CULL_FACE);
-		
-		Transform wall_tf;
-
-		// 不使用法线贴图
-		phong_shader->Use();
-		phong_shader->Apply(*camera, true, false);
-		phong_shader->Apply(lights);
-		phong_shader->SetUniformBool("use_cube_map", false);
-		phong_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_shader->Apply(wall_material);
-		wall_tf.position = glm::vec3(5, 0, -2);
-		phong_shader->Apply(wall_tf);
-		square_mesh2.Draw(*phong_shader);
-		// 使用法线贴图
-		phong_TBN_shader->Use();
-		phong_TBN_shader->Apply(*camera, true, false);
-		phong_TBN_shader->Apply(lights);
-		phong_TBN_shader->SetUniformBool("use_cube_map", false);
-		phong_TBN_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_TBN_shader->Apply(wall_material_with_normal);
-		wall_tf.position = glm::vec3(5, 2.5, -2);
-		//wall_tf.rotate_axis = glm::vec3(1, 0, 0);
-		//wall_tf.rotate_angle = -90;
-		phong_TBN_shader->Apply(wall_tf);
-		square_mesh2.Draw(*phong_TBN_shader);
-#pragma endregion
-
-#pragma region bricks2 for parallax mapping
-		glDisable(GL_CULL_FACE);
-
-		phong_CubeMapShadow_Parallax_shader->Use();
-		phong_CubeMapShadow_Parallax_shader->Apply(*camera, true, false);
-		phong_CubeMapShadow_Parallax_shader->Apply(lights);
-		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_cube_map", false);
-		phong_CubeMapShadow_Parallax_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_CubeMapShadow_Parallax_shader->SetUniformFloat("parallax_height_scale", 0.1);
-		for (int i = 0; i < bricks2_count; i++)
-		{
-			Transform bricks2_tf(bricks2_pos[i], glm::vec3(1), bricks2_rotate_axis[i % 4], bricks2_rotate_angle[i % 4]);
-			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_tf);
-			phong_CubeMapShadow_Parallax_shader->Apply(bricks2_material);
-			for (int j = 0; j < lights.size(); j++)
-			{
-				phong_CubeMapShadow_Parallax_shader->Apply(*shadows[j], j);
-			}
-			square_mesh2.Draw(*phong_CubeMapShadow_Parallax_shader);
 		}
 #pragma endregion
 
@@ -807,28 +716,6 @@ int main()
 		}
 #pragma endregion
 
-/*
-#pragma region box 实例化渲染
-		phong_instance_shader->Use();
-		phong_instance_shader->Apply(*camera, true);
-		phong_instance_shader->Apply(lights);
-		phong_instance_shader->SetUniformBool("use_cube_map", false);
-		phong_instance_shader->SetUniformBool("use_blinn", use_blinn);
-		phong_instance_shader->Apply(cube_material);
-
-		for (int i = 1; i < box_instance_num; i++)
-		{
-			auto model = box_instance_model[i];
-			phong_instance_shader->SetUniformMat4f("model[" + std::to_string(i) + "]", model);
-			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(model)));
-			phong_instance_shader->SetUniformMat3f("NormalMatrix[" + std::to_string(i) + "]", normal_matrix);
-		}
-		cube_mesh.DrawInstance(*phong_instance_shader, box_instance_num);
-#pragma endregion
-
-
-*/
-
 #pragma region  light box
 		for (int i = 0; i < lights.size(); i++)
 		{
@@ -845,158 +732,7 @@ int main()
 			light_mesh.Draw(*light_shaderProgram);
 		}
 #pragma endregion
-
-		/*
-#pragma region planet
-		phong_shader->Use();
-		phong_shader->Apply(*camera, true);
-		phong_shader->Apply(lights);
-		phong_shader->Apply(planet_tf);
-		phong_shader->SetUniformBool("use_cube_map", false);
-		phong_shader->SetUniformBool("use_blinn", use_blinn);
-		planet.Draw(*phong_shader);
-
-		if (rock_move)
-		{
-			for (int i = 0; i < rock_num; i++)
-			{
-				rock_tfs[i].position = planet_tf.position +
-					glm::vec3(
-						rock_radius[i] * std::sin(rock_angle[i] + glfwGetTime() * rock_around_speed),
-						rock_y[i],
-						rock_radius[i] * std::cos(rock_angle[i] + glfwGetTime() * rock_around_speed));
-				if (planet_use_instance)
-					rock_models[i] = rock_tfs[i].GetModel();
-			}
-		}
-		if (planet_use_instance)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, rock_model_instance_vbo);
-			glBufferData(GL_ARRAY_BUFFER, rock_num * sizeof(glm::mat4), rock_models.data(), GL_STATIC_DRAW);
-
-			phong_instance_array_shader->Use();
-			phong_instance_array_shader->Apply(*camera, true);
-			phong_instance_array_shader->Apply(lights);
-			phong_instance_array_shader->SetUniformBool("use_cube_map", false);
-			phong_instance_array_shader->SetUniformBool("use_blinn", use_blinn);
-			rock.DrawInstance(*phong_instance_array_shader, rock_num);
-		}
-		else
-		{
-			for (int i = 0; i < rock_num; i++)
-			{
-				phong_shader->Apply(rock_tfs[i]);
-				rock.Draw(*phong_shader);
-			}
-		}
-#pragma endregion */
-
-#pragma region skybox
-		if (active_skybox)
-		{
-			// 天空盒的深度在顶点着色器中被强制设为1，但深度缓冲的默认值也为1
-			// 所以我们需要保证天空盒在值小于或等于深度缓冲而不是小于时通过深度测试
-			glDepthFunc(GL_LEQUAL);
-			skybox_shader->Use();
-			skybox_shader->Apply(*camera, false, true);
-			skybox_shader->Apply(skybox_material);
-			skybox_mesh.Draw(*skybox_shader);
-			glDepthFunc(GL_LESS);
-		}
-#pragma endregion
-		
-#pragma region 带透明度的物体
-		glDisable(GL_CULL_FACE);
-		std::vector<Object> objs(3);
-
-		transform = Transform(glm::vec3(0, 0, 2), glm::vec3(1.0f));
-		objs.emplace(objs.end(), &square_mesh, transform, grass_material);
-
-		for (int i = 0; i < 2; i++)
-		{
-			transform = Transform(glm::vec3(0, 0, 4- i), glm::vec3(1.0f));
-			objs.emplace(objs.end(), &square_mesh, transform, window_material);
-		}
-
-		std::map<float, Object*> sorted;
-		for (int i = 0; i < objs.size(); i++)
-		{
-			float dist = glm::length(objs[i].transform.position - camera->position);
-			sorted[dist] = &objs[i];
-		}
-		
-		for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
-		{
-			blend_shader->Use();
-			blend_shader->Apply(*camera, true);
-			blend_shader->Apply(it->second->transform);
-			blend_shader->Apply(it->second->material);
-			it->second->Draw(*blend_shader);
-		}
-#pragma endregion
-
-
-
-		if (use_frame_buffer)
-		{
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_CULL_FACE);
-			if (use_bloom)
-			{
-				// 提取高亮区域
-				bloom_buffer[1].BindSelf();
-				bloom_buffer[1].UpdateViewport();
-				brightness_extract_shader->Use();
-				brightness_extract_shader->Apply(*frame_buffer.color_buffer, "tex");
-				square_mesh.Draw(*brightness_extract_shader);
-
-				// 模糊
-				for (int i = 0; i < bloom_count; i++)
-				{
-					bloom_buffer[i % 2].BindSelf();
-					bloom_buffer[i % 2].UpdateViewport();
-					gaussian_blur_shader->Use();
-					gaussian_blur_shader->Apply(*bloom_buffer[(i + 1) % 2].color_buffer, "tex");
-					gaussian_blur_shader->SetUniformBool("horizontal", i % 2 == 0);
-					square_mesh.Draw(*gaussian_blur_shader);
-					Texture::ClearAllBindTexture();
-				}
-				//GLObject::Unbind<FrameBuffer>();
-				//glViewport(0, 0, ScreenWidth, ScreenHeight);
-				//HDR_tex_shader->Use();
-				//HDR_tex_shader->Apply(*bloom_buffer[(bloom_count - 1) % 2].color_buffer, "tex");
-				//HDR_tex_shader->SetUniformFloat("exposure", 1.0);
-				//square_mesh.Draw(*HDR_tex_shader);
-			}
-
-			GLObject::Unbind<FrameBuffer>();
-			glViewport(0, 0, ScreenWidth, ScreenHeight);
-			if (use_hdr)
-			{
-				if (use_bloom)
-				{
-					hdr_bloom_shader->Use();
-					hdr_bloom_shader->Apply(*frame_buffer.color_buffer, "tex");
-					hdr_bloom_shader->Apply(*bloom_buffer[(bloom_count - 1) % 2].color_buffer, "bloom_tex");
-					hdr_bloom_shader->SetUniformFloat("exposure", 0.6);
-					square_mesh.Draw(*hdr_bloom_shader);
-				}
-				else
-				{
-					HDR_tex_shader->Use();
-					HDR_tex_shader->Apply(*frame_buffer.color_buffer, "tex");
-					HDR_tex_shader->SetUniformFloat("exposure", 1.0);
-					square_mesh.Draw(*HDR_tex_shader);
-				}
-			}
-			else
-			{
-				frame_buffer_shader->Use();
-				frame_buffer_shader->Apply(*frame_buffer.color_buffer, "tex");
-				square_mesh.Draw(*frame_buffer_shader);
-			}
-		}
-		Texture::ClearAllBindTexture();
+*/
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);
 		// glfwPollEvents函数检查有没有触发什么事件（比如键盘输入、鼠标移动等）、更新窗口状态，并调用对应的回调函数

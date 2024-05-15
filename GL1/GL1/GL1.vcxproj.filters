@@ -87,6 +87,9 @@
     <ClCompile Include="PointShadow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="GBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -159,6 +162,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="GLObject.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
