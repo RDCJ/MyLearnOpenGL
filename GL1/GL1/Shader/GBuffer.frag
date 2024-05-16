@@ -2,7 +2,8 @@
 
 layout (location = 0) out vec4 gPosition;
 layout (location = 1) out vec4 gNormal;
-layout (location = 2) out vec4 gColorSpecular;
+layout (location = 2) out vec4 gDiffuse;
+layout (location = 3) out vec4 gSpecular;
 
 struct Material
 {
@@ -32,6 +33,6 @@ void main()
 {
     gPosition = vec4(FragPos, 1.0);
     gNormal = vec4(normalize(Normal), 1.0);
-    gColorSpecular.rgb = texture(material.texture_diffuse0, TexCoord).rgb;
-    gColorSpecular.a = texture(material.texture_specular0, TexCoord).r;
+    gDiffuse = texture(material.texture_diffuse0, TexCoord);
+    gSpecular = texture(material.texture_specular0, TexCoord);
 }

@@ -13,9 +13,13 @@ class GBuffer: public FrameBuffer
 		/// </summary>
 		Texture2D gNormal;
 		/// <summary>
-		/// ÑÕÉ« + ¾µÃæ»º³å
+		/// ÑÕÉ«»º³å
 		/// </summary>
-		Texture2D gColorSpecular;
+		Texture2D gDiffuse;
+		/// <summary>
+		///  ¾µÃæ»º³å
+		/// </summary>
+		Texture2D gSpecular;
 
 };
 

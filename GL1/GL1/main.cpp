@@ -89,7 +89,6 @@ void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 static std::vector<Light*> CreateLight()
 {
-	
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(0.0f,  0.0f,  2.0f),
 		glm::vec3(8, 2.5, -2),
@@ -111,23 +110,25 @@ static std::vector<Light*> CreateLight()
 		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
 		lights.push_back(light);
 	}
-	lights[0]->ambient = glm::vec3(0.4f);
+	lights[0]->ambient = glm::vec3(1);
 	lights[0]->diffuse = glm::vec3(1);
 	lights[0]->specular = glm::vec3(1);
 
 	for (int i = 1; i < 5; i++)
 	{
-		lights[i]->ambient = 0.001f * lightColors[i - 1];
+		lights[i]->ambient = 0.1f * lightColors[i - 1];
 		lights[i]->diffuse = lightColors[i - 1];
 		lights[i]->specular = lightColors[i - 1];
-		lights[i]->linear = 0.2;
-		lights[i]->quadratic = 0.06;
+		lights[i]->linear = 0.1;
+		lights[i]->quadratic = 0.03;
 	}
 	return lights;
 }
 
 int main() 
 {
+	srand(1024);
+
 	InitGLFW();
 
 	// 在创建窗口之前调用glfwWindowHint, 使用一个包含N个样本的多重采样缓冲
@@ -182,7 +183,9 @@ int main()
 	ShaderProgram* brightness_extract_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Brightness_Extract.frag");
 	ShaderProgram* gaussian_blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Gaussian_Blur.frag");
 	ShaderProgram* hdr_bloom_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/HDR_Bloom.frag");
+
 	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/GBuffer.frag");
+	ShaderProgram* phong_GBuffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Blinn_Phong_GBuffer.frag");
 
 	Material empty_material;
 
@@ -322,6 +325,13 @@ int main()
 		glm::vec3(1.5f,  0.2f, -1.5f),
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
+	glm::vec3 cube_rotate_axis[10];
+	float cube_rotate_angle[10];
+	for (int i = 0; i < 10; i++)
+	{
+		cube_rotate_axis[i] = glm::vec3(Utils::RandomFloat(-1, 1), Utils::RandomFloat(-1, 1), Utils::RandomFloat(-1, 1));
+		cube_rotate_angle[i] = Utils::RandomInt(0, 360);
+	}
 #pragma endregion
 
 #pragma region grass model
@@ -417,8 +427,6 @@ int main()
 	float rock_min_size = 0.05, rock_max_size = 0.1;
 	float rock_around_speed = 0.02f;
 
-	srand(1024);
-	
 	Model planet("./Model/planet/planet.obj", true);
 	for (int i = 0; i < planet.materials.size(); i++)
 		planet.materials[i].shininess = 0.1f * 128;
@@ -575,36 +583,70 @@ int main()
 		light_follow_camera = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
 		if (light_follow_camera)
 		{
-			lights[1]->position = camera->position;
+			lights[0]->position = camera->position;
 		}
 	
 		camera->FillUniformMatrices();
 		
 		g_buffer.BindSelf();
 		g_buffer.UpdateViewport();
-		GLuint attachments1[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-		glDrawBuffers(3, attachments1);
+		GLuint attachments1[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
+		glDrawBuffers(4, attachments1);
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-		Transform box_tf(glm::vec3(0, 0, 1), glm::vec3(0.1));
+		glEnable(GL_DEPTH_TEST);
+		
 		GBuffer_shader->Use();
-		GBuffer_shader->Apply(box_tf);
 		GBuffer_shader->Apply(*camera, true, false);
-		GBuffer_shader->Apply(cube_material);
-		cube_mesh.Draw(*GBuffer_shader);
+		for (int i = 0; i < 10; i++)
+		{
+			Transform box_tf(cubePositions[i], glm::vec3(1), cube_rotate_axis[i], cube_rotate_angle[i]);
+			GBuffer_shader->Apply(box_tf);
+			GBuffer_shader->Apply(cube_material);
+			cube_mesh.Draw(*GBuffer_shader);
+		}
 		//nanosuit.Draw(*GBuffer_shader);
-		Texture::ClearAllBindTexture();
 
 		//GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
 		//glDrawBuffers(1, attachments2);
 
 		GLObject::Unbind<FrameBuffer>();
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		frame_buffer_shader->Use();
-		frame_buffer_shader->Apply(g_buffer.gNormal, "tex");
-		square_mesh.Draw(*frame_buffer_shader);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		phong_GBuffer_shader->Use();
+		phong_GBuffer_shader->Apply(lights);
+		phong_GBuffer_shader->Apply(g_buffer);
+		phong_GBuffer_shader->Apply(*camera);
+		square_mesh.Draw(*phong_GBuffer_shader);
+		//frame_buffer_shader->Use();
+		//frame_buffer_shader->Apply(g_buffer.gDiffuse, "tex");
+		//square_mesh.Draw(*frame_buffer_shader);
 		Texture::ClearAllBindTexture();
+
+		#pragma region  light box
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer.GetID());
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBlitFramebuffer(
+			0, 0, ScreenWidth, ScreenHeight, 0, 0, ScreenWidth, ScreenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		for (int i = 0; i < lights.size(); i++)
+		{
+			Light* light = lights[i];
+
+			light_shaderProgram->Use();
+			light_shaderProgram->Apply(*camera, true);
+			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
+
+			Transform transform = Transform(light->position, glm::vec3(0.1f));
+			light_shaderProgram->Apply(transform);
+			light_shaderProgram->Apply(empty_material);
+
+			light_mesh.Draw(*light_shaderProgram);
+			Texture::ClearAllBindTexture();
+
+		}
+		#pragma endregion
 
 		/*
 #pragma region 深度贴图
@@ -716,22 +758,6 @@ int main()
 		}
 #pragma endregion
 
-#pragma region  light box
-		for (int i = 0; i < lights.size(); i++)
-		{
-			Light* light = lights[i];
-
-			light_shaderProgram->Use();
-			light_shaderProgram->Apply(*camera, true);
-			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
-
-			Transform transform = Transform(light->position, glm::vec3(0.1f));
-			light_shaderProgram->Apply(transform);
-			light_shaderProgram->Apply(empty_material);
-
-			light_mesh.Draw(*light_shaderProgram);
-		}
-#pragma endregion
 */
 		// glfwSwapBuffers函数会交换颜色缓冲（它是一个储存着GLFW窗口每一个像素颜色值的大缓冲），它在这一迭代中被用来绘制，并且将会作为输出显示在屏幕上
 		glfwSwapBuffers(window);

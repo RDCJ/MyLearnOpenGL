@@ -164,6 +164,14 @@ void ShaderProgram::Apply(Texture& tex, std::string name, GLenum tex_unit)
 	tex.ActiveBind(tex_unit);
 }
 
+void ShaderProgram::Apply(GBuffer& g_buffer)
+{
+	this->Apply(g_buffer.gPosition, "g_buffer.gPosition");
+	this->Apply(g_buffer.gNormal, "g_buffer.gNormal");
+	this->Apply(g_buffer.gDiffuse, "g_buffer.gDiffuse");
+	this->Apply(g_buffer.gSpecular, "g_buffer.gSpecular");
+}
+
 void ShaderProgram::Apply(Material& material)
 {
 	if (material.cube_map != nullptr)

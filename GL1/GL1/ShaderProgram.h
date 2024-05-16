@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include "Shadow.h"
 #include "PointShadow.h"
+#include "GBuffer.h"
 
 /// <summary>
 /// 着色器程序对象(Shader Program Object)是多个着色器合并之后并最终链接完成的版本。
@@ -116,6 +117,11 @@ class ShaderProgram
 		/// <param name="name"></param>
 		/// <param name="tex_unit"></param>
 		void Apply(Texture& tex, std::string name, GLenum tex_unit);
+		/// <summary>
+		/// GBuffer光照处理
+		/// </summary>
+		/// <param name="g_buffer"></param>
+		void Apply(GBuffer& g_buffer);
 
 #pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
