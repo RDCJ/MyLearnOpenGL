@@ -33,6 +33,6 @@ void main()
 {
     gPosition = vec4(FragPos, 1.0);
     gNormal = vec4(normalize(Normal), 1.0);
-    gDiffuse = texture(material.texture_diffuse0, TexCoord);
-    gSpecular = texture(material.texture_specular0, TexCoord);
+    gDiffuse = vec4(texture(material.texture_diffuse0, TexCoord).rgb, 1.0);
+    gSpecular = vec4(texture(material.texture_specular0, TexCoord).rgb, material.shininess);
 }

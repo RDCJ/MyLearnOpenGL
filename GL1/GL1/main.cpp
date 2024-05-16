@@ -532,10 +532,10 @@ int main()
 	// 默认：GL_CCW
 	glFrontFace(GL_CCW);
 
-	// 启用混合
-	glEnable(GL_BLEND);
-	// glBlendFunc函数接受两个参数，来设置源和目标因子
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//// 启用混合
+	//glEnable(GL_BLEND);
+	//// glBlendFunc函数接受两个参数，来设置源和目标因子
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// 启用多重采样。在大多数OpenGL的驱动上，多重采样都是默认启用
 	glEnable(GL_MULTISAMPLE);
@@ -595,9 +595,15 @@ int main()
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
 		
 		GBuffer_shader->Use();
 		GBuffer_shader->Apply(*camera, true, false);
+
+		Transform tf(glm::vec3(0, 0, 1), glm::vec3(0.1f));
+		GBuffer_shader->Apply(tf);
+		nanosuit.Draw(*GBuffer_shader);
+
 		for (int i = 0; i < 10; i++)
 		{
 			Transform box_tf(cubePositions[i], glm::vec3(1), cube_rotate_axis[i], cube_rotate_angle[i]);
@@ -605,31 +611,41 @@ int main()
 			GBuffer_shader->Apply(cube_material);
 			cube_mesh.Draw(*GBuffer_shader);
 		}
-		//nanosuit.Draw(*GBuffer_shader);
-
-		//GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
-		//glDrawBuffers(1, attachments2);
+		
+		GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
+		glDrawBuffers(1, attachments2);
 
 		GLObject::Unbind<FrameBuffer>();
 		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		// 
 		phong_GBuffer_shader->Use();
 		phong_GBuffer_shader->Apply(lights);
 		phong_GBuffer_shader->Apply(g_buffer);
 		phong_GBuffer_shader->Apply(*camera);
 		square_mesh.Draw(*phong_GBuffer_shader);
+
 		//frame_buffer_shader->Use();
 		//frame_buffer_shader->Apply(g_buffer.gDiffuse, "tex");
 		//square_mesh.Draw(*frame_buffer_shader);
 		Texture::ClearAllBindTexture();
 
-		#pragma region  light box
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer.GetID());
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBlitFramebuffer(
 			0, 0, ScreenWidth, ScreenHeight, 0, 0, ScreenWidth, ScreenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST
 		);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		tf.position = glm::vec3(-2, 0, 1);
+		phong_shader->Use();
+		phong_shader->Apply(*camera, true);
+		phong_shader->Apply(lights);
+		phong_shader->Apply(tf);
+		phong_shader->SetUniformBool("use_blinn", use_blinn);
+		nanosuit.Draw(*phong_shader);
+
+		#pragma region  light box
 		for (int i = 0; i < lights.size(); i++)
 		{
 			Light* light = lights[i];

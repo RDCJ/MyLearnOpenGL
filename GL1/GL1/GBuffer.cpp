@@ -9,7 +9,7 @@ GBuffer::GBuffer(int buffer_width, int buffer_height): FrameBuffer(buffer_width,
 	gPosition = Texture2D(buffer_width, buffer_height, GL_RGB16F, GL_RGB, NULL, GL_FLOAT, params);
 	gNormal = Texture2D(buffer_width, buffer_height, GL_RGB16F, GL_RGB, NULL, GL_FLOAT, params);
 	gDiffuse = Texture2D(buffer_width, buffer_height, GL_RGBA, GL_RGBA, NULL, GL_FLOAT, params);
-	gSpecular = Texture2D(buffer_width, buffer_height, GL_RGBA, GL_RGBA, NULL, GL_FLOAT, params);
+	gSpecular = Texture2D(buffer_width, buffer_height, GL_RGBA16F, GL_RGBA, NULL, GL_FLOAT, params);
 
 	BindSelf();
 	BindTexture2D(gPosition, GL_COLOR_ATTACHMENT0, 0);

@@ -40,6 +40,7 @@ vec3 FragPos;
 vec3 Normal;
 vec3 diffuse_v;
 vec3 specular_v;
+float shininess;
 
 vec3 CalcLight(int light_idx, vec3 normal, vec3 viewDir)
 {
@@ -78,7 +79,7 @@ vec3 CalcLight(int light_idx, vec3 normal, vec3 viewDir)
     // 计算半程向量
     vec3 halfwayDir = normalize(lightDir + viewDir);
     // 然后计算半程向量与法向量的角度差，它们之间夹角越小，镜面光的作用就越大, 用点乘表示角度差
-    float specular_param = pow(max(dot(halfwayDir, normal), 0.0), 50);
+    float specular_param = pow(max(dot(halfwayDir, normal), 0.0), shininess);
 
     vec3 specular = specular_param * light.specular * specular_v;
 
@@ -93,6 +94,7 @@ void main()
     Normal = texture(g_buffer.gNormal, TexCoord).rgb;
     diffuse_v = texture(g_buffer.gDiffuse, TexCoord).rgb;
     specular_v = texture(g_buffer.gSpecular, TexCoord).rgb;
+    shininess = texture(g_buffer.gSpecular, TexCoord).a;
 
     // 观察方向(片段->摄像机)
     vec3 viewDir = normalize(viewPos - FragPos);
