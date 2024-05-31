@@ -18,6 +18,7 @@
 #include "FPSController.h"
 #include "OrthoCamera.h"
 #include "GBuffer.h"
+#include "SSAO.h"
 
 const int ScreenWidth = 1600;
 const int ScreenHeight = 1200;
@@ -110,7 +111,7 @@ static std::vector<Light*> CreateLight()
 		Light* light = Light::CreatePoint(pointLightPositions[i], 1, 0.09f, 0.032f);
 		lights.push_back(light);
 	}
-	lights[0]->ambient = glm::vec3(1);
+	lights[0]->ambient = glm::vec3(1); 
 	lights[0]->diffuse = glm::vec3(1);
 	lights[0]->specular = glm::vec3(1);
 
@@ -123,6 +124,26 @@ static std::vector<Light*> CreateLight()
 		lights[i]->quadratic = 0.03;
 	}
 	return lights;
+}
+
+std::vector<glm::vec3> GetSSAOKernel()
+{
+	std::vector<glm::vec3> SSAOKernel;
+	SSAOKernel.reserve(64);
+	for (int i = 0; i < 64; i++)
+	{
+		glm::vec3 sample(
+			Utils::RandomFloat(0, 1) * 2.0 - 1.0,
+			Utils::RandomFloat(0, 1) * 2.0 - 1.0,
+			Utils::RandomFloat(0, 1) 
+		);
+		sample = glm::normalize(sample);
+		sample *= Utils::RandomFloat(0, 1);
+		float scale = (float)i / 64.0;
+		scale = Utils::Lerp(0.1f, 1.0f, scale * scale);
+		sample *= scale;
+	}
+	return SSAOKernel;
 }
 
 int main() 
@@ -184,8 +205,9 @@ int main()
 	ShaderProgram* gaussian_blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Gaussian_Blur.frag");
 	ShaderProgram* hdr_bloom_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/HDR_Bloom.frag");
 
-	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/GBuffer.frag");
+	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP_View.vert", "./Shader/GBuffer.frag");
 	ShaderProgram* phong_GBuffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Blinn_Phong_GBuffer.frag");
+	ShaderProgram* RedChannel_Gray_Shader = new ShaderProgram("./Shader/simple.vert", "./Shader/RedChannel_Gray.frag");
 
 	Material empty_material;
 
@@ -516,6 +538,14 @@ int main()
 	int bricks2_count = bricks2_pos.size();
 #pragma endregion
 
+	#pragma region SSAO
+	SSAO::Init();
+	SSAO ssao(ScreenWidth, ScreenHeight);
+	int ssao_kernel_size = 64;
+	float ssao_radius = 1;
+	#pragma endregion
+
+
 	Time::Init();
 	
 	auto lights = CreateLight();
@@ -571,6 +601,8 @@ int main()
 	bool light_follow_camera = false;
 	bool use_frame_buffer = true;
 
+	bool only_draw_ssao = true;
+
 	std::cout << "开始渲染" << std::endl;
 	// 添加一个while循环，我们可以把它称之为渲染循环(Render Loop)，它能在我们让GLFW退出前一直保持运行
 	// glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序
@@ -590,8 +622,11 @@ int main()
 		
 		g_buffer.BindSelf();
 		g_buffer.UpdateViewport();
-		GLuint attachments1[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
-		glDrawBuffers(4, attachments1);
+		GLuint attachments1[6] = {
+			GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, 
+			GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5
+		};
+		glDrawBuffers(6, attachments1);
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
@@ -600,7 +635,9 @@ int main()
 		GBuffer_shader->Use();
 		GBuffer_shader->Apply(*camera, true, false);
 
-		Transform tf(glm::vec3(0, 0, 1), glm::vec3(0.1f));
+		Transform tf(glm::vec3(0, 0, 4), glm::vec3(0.1f));
+		tf.rotate_axis = glm::vec3(1, 0, 0);
+		tf.rotate_angle = -90;
 		GBuffer_shader->Apply(tf);
 		nanosuit.Draw(*GBuffer_shader);
 
@@ -611,59 +648,88 @@ int main()
 			GBuffer_shader->Apply(cube_material);
 			cube_mesh.Draw(*GBuffer_shader);
 		}
+
+		Transform box_tf(glm::vec3(0, -0.6, 3.5), glm::vec3(1));
+		GBuffer_shader->Apply(box_tf);
+		GBuffer_shader->Apply(cube_material);
+		cube_mesh.Draw(*GBuffer_shader);
 		
 		GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
 		glDrawBuffers(1, attachments2);
 
-		GLObject::Unbind<FrameBuffer>();
-		glViewport(0, 0, ScreenWidth, ScreenHeight);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		// 
-		phong_GBuffer_shader->Use();
-		phong_GBuffer_shader->Apply(lights);
-		phong_GBuffer_shader->Apply(g_buffer);
-		phong_GBuffer_shader->Apply(*camera);
-		square_mesh.Draw(*phong_GBuffer_shader);
-
-		//frame_buffer_shader->Use();
-		//frame_buffer_shader->Apply(g_buffer.gDiffuse, "tex");
-		//square_mesh.Draw(*frame_buffer_shader);
-		Texture::ClearAllBindTexture();
-
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer.GetID());
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		glBlitFramebuffer(
-			0, 0, ScreenWidth, ScreenHeight, 0, 0, ScreenWidth, ScreenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST
-		);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		tf.position = glm::vec3(-2, 0, 1);
-		phong_shader->Use();
-		phong_shader->Apply(*camera, true);
-		phong_shader->Apply(lights);
-		phong_shader->Apply(tf);
-		phong_shader->SetUniformBool("use_blinn", use_blinn);
-		nanosuit.Draw(*phong_shader);
-
-		#pragma region  light box
-		for (int i = 0; i < lights.size(); i++)
+		if (only_draw_ssao)
 		{
-			Light* light = lights[i];
+			ssao.SSAOFrameBuffer.BindSelf();
+			ssao.SSAOFrameBuffer.UpdateViewport();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			SSAO::shader->Use();
+			SSAO::shader->Apply(g_buffer);
+			SSAO::shader->Apply(*SSAO::Noise, "SSAONoise");
+			for (int i = 0; i < 64; i++)
+			{
+				SSAO::shader->SetUniformVec3("SSAOKernel[" + std::to_string(i) + "]", SSAO::Kernel[i]);
+			}
+			SSAO::shader->SetUniformInt("kernel_size", ssao_kernel_size);
+			SSAO::shader->SetUniformFloat("radius", ssao_radius);
+			SSAO::shader->SetUniformVec2("screen_size", ScreenWidth, ScreenHeight);
+			SSAO::shader->Apply(*camera, true, false);
+			square_mesh.Draw(*SSAO::shader);
 
-			light_shaderProgram->Use();
-			light_shaderProgram->Apply(*camera, true);
-			light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
-
-			Transform transform = Transform(light->position, glm::vec3(0.1f));
-			light_shaderProgram->Apply(transform);
-			light_shaderProgram->Apply(empty_material);
-
-			light_mesh.Draw(*light_shaderProgram);
+			GLObject::Unbind<FrameBuffer>();
+			glViewport(0, 0, ScreenWidth, ScreenHeight);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			RedChannel_Gray_Shader->Use();
+			RedChannel_Gray_Shader->Apply(*ssao.SSAOFrameBuffer.color_buffer, "tex");
+			square_mesh.Draw(*RedChannel_Gray_Shader);
+		}
+		// 
+		else
+		{
+			GLObject::Unbind<FrameBuffer>();
+			glViewport(0, 0, ScreenWidth, ScreenHeight);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			phong_GBuffer_shader->Use();
+			phong_GBuffer_shader->Apply(lights);
+			phong_GBuffer_shader->Apply(g_buffer);
+			phong_GBuffer_shader->Apply(*camera);
+			square_mesh.Draw(*phong_GBuffer_shader);
 			Texture::ClearAllBindTexture();
 
-		}
-		#pragma endregion
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buffer.GetID());
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			glBlitFramebuffer(
+				0, 0, ScreenWidth, ScreenHeight, 0, 0, ScreenWidth, ScreenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+			);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+			tf.position = glm::vec3(-2, 0, 1);
+			phong_shader->Use();
+			phong_shader->Apply(*camera, true);
+			phong_shader->Apply(lights);
+			phong_shader->Apply(tf);
+			phong_shader->SetUniformBool("use_blinn", use_blinn);
+			nanosuit.Draw(*phong_shader);
+
+			#pragma region  light box
+			for (int i = 0; i < lights.size(); i++)
+			{
+				Light* light = lights[i];
+
+				light_shaderProgram->Use();
+				light_shaderProgram->Apply(*camera, true);
+				light_shaderProgram->SetUniformVec3("lightColor", light->diffuse);
+
+				Transform transform = Transform(light->position, glm::vec3(0.1f));
+				light_shaderProgram->Apply(transform);
+				light_shaderProgram->Apply(empty_material);
+
+				light_mesh.Draw(*light_shaderProgram);
+				Texture::ClearAllBindTexture();
+
+			}
+			#pragma endregion
+		}
+		
 		/*
 #pragma region 深度贴图
 		glEnable(GL_DEPTH_TEST);

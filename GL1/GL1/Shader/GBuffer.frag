@@ -4,6 +4,8 @@ layout (location = 0) out vec4 gPosition;
 layout (location = 1) out vec4 gNormal;
 layout (location = 2) out vec4 gDiffuse;
 layout (location = 3) out vec4 gSpecular;
+layout (location = 4) out vec4 gViewPosition;
+layout (location = 5) out vec4 gViewNormal;
 
 struct Material
 {
@@ -26,13 +28,25 @@ struct Material
 in vec2 TexCoord;
 in vec3 FragPos;
 in vec3 Normal;
+in vec3 ViewFragPos;
+in vec3 ViewNormal;
 
 uniform Material material;
+uniform float z_far;
+uniform float z_near;
+
+float LinearizeDepth(float depth)
+{
+    float z = depth * 2.0 - 1.0; // 回到NDC
+    return (2.0 * z_near * z_far) / (z_far + z_near - z * (z_far - z_near));    
+}
 
 void main()
 {
-    gPosition = vec4(FragPos, 1.0);
+    gPosition = vec4(FragPos, gl_FragCoord.z);
+    gViewPosition = vec4(ViewFragPos, LinearizeDepth(gl_FragCoord.z));
     gNormal = vec4(normalize(Normal), 1.0);
+    gViewNormal = vec4(normalize(ViewNormal), 1.0);
     gDiffuse = vec4(texture(material.texture_diffuse0, TexCoord).rgb, 1.0);
     gSpecular = vec4(texture(material.texture_specular0, TexCoord).rgb, material.shininess);
 }

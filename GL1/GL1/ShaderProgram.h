@@ -123,6 +123,8 @@ class ShaderProgram
 		/// <param name="g_buffer"></param>
 		void Apply(GBuffer& g_buffer);
 
+
+
 #pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
 		{
@@ -163,6 +165,11 @@ class ShaderProgram
 		void SetUniformVec3(const std::string& name, float x, float y, float z) const
 		{
 			glUniform3f(GetUniformLocation(name.c_str()), x, y, z);
+		}
+
+		void SetUniformVec2(const std::string& name, float x, float y) const
+		{
+			glUniform2f(GetUniformLocation(name.c_str()), x, y);
 		}
 #pragma endregion
 

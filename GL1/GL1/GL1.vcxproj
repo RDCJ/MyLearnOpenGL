@@ -150,6 +150,7 @@
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Shadow.cpp" />
     <ClCompile Include="PointShadow.cpp" />
+    <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Texture2D.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Shadow.h" />
     <ClInclude Include="PointShadow.h" />
+    <ClInclude Include="SSAO.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Texture2D.h" />
