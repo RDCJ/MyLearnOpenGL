@@ -3,10 +3,11 @@
 in vec2 TexCoord;
 out float FragColor;
 
+// 传入的应该是观察空间下的数据
 struct GBuffer
 {
-    sampler2D gViewPosition;
-    sampler2D gViewNormal;
+    sampler2D gPosition;
+    sampler2D gNormal;
 };
 
 uniform GBuffer g_buffer;
@@ -29,8 +30,8 @@ uniform vec2 screen_size;
 void main()
 {
     const vec2 noiseScale = screen_size * 0.25;
-    vec3 FragPos = texture(g_buffer.gViewPosition, TexCoord).xyz;
-    vec3 normal = texture(g_buffer.gViewNormal, TexCoord).rgb;
+    vec3 FragPos = texture(g_buffer.gPosition, TexCoord).xyz;
+    vec3 normal = texture(g_buffer.gNormal, TexCoord).rgb;
     vec3 randomVec = texture(SSAONoise, noiseScale * TexCoord).xyz;
     
     // 创建一个TBN矩阵，将向量从切线空间变换到观察空间
@@ -50,9 +51,9 @@ void main()
         // 变换到0.0 - 1.0的值域
         sample_v4.xyz = sample_v4.xyz * 0.5 + 0.5;
         // 对深度采样
-        float sampleDepth = -texture(g_buffer.gViewPosition, sample_v4.xy).w;
+        float sampleDepth = -texture(g_buffer.gPosition, sample_v4.xy).w;
 
-        float range_check = smoothstep(0, 1, radius / abs(FragPos.z - sampleDepth));
+        float range_check = smoothstep(0.0, 1.0, radius / abs(FragPos.z - sampleDepth));
         occlusion += (sampleDepth >= sample_v3.z ? 1.0 : 0.0) * range_check;
     }
     FragColor = 1.0 - (occlusion / kernel_size);

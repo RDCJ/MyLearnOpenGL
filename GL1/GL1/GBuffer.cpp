@@ -9,9 +9,7 @@ GBuffer::GBuffer(int buffer_width, int buffer_height): FrameBuffer(buffer_width,
 		{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE}
 	};
 	gPosition = Texture2D(buffer_width, buffer_height, GL_RGBA16F, GL_RGBA, NULL, GL_FLOAT, params);
-	gViewPosition = Texture2D(buffer_width, buffer_height, GL_RGBA16F, GL_RGBA, NULL, GL_FLOAT, params);
 	gNormal = Texture2D(buffer_width, buffer_height, GL_RGB16F, GL_RGB, NULL, GL_FLOAT, params);
-	gViewNormal = Texture2D(buffer_width, buffer_height, GL_RGB16F, GL_RGB, NULL, GL_FLOAT, params);
 	gDiffuse = Texture2D(buffer_width, buffer_height, GL_RGBA, GL_RGBA, NULL, GL_FLOAT, params);
 	gSpecular = Texture2D(buffer_width, buffer_height, GL_RGBA16F, GL_RGBA, NULL, GL_FLOAT, params);
 
@@ -20,8 +18,6 @@ GBuffer::GBuffer(int buffer_width, int buffer_height): FrameBuffer(buffer_width,
 	BindTexture2D(gNormal, GL_COLOR_ATTACHMENT1, 0);
 	BindTexture2D(gDiffuse, GL_COLOR_ATTACHMENT2, 0);
 	BindTexture2D(gSpecular, GL_COLOR_ATTACHMENT3, 0);
-	BindTexture2D(gViewPosition, GL_COLOR_ATTACHMENT4, 0);
-	BindTexture2D(gViewNormal, GL_COLOR_ATTACHMENT5, 0);
 	//GLuint attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
 	//glDrawBuffers(3, attachments);
 	AddRenderBuffer();

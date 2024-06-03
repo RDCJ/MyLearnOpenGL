@@ -69,9 +69,9 @@ void ShaderProgram::Apply(Camera& camera, bool use_uniform_matrices, bool skybox
 
 		this->SetUniformMat4f("view", view);
 		this->SetUniformMat4f("projection", projection);
-		this->SetUniformFloat("z_near", camera.Z_Near);
-		this->SetUniformFloat("z_far", camera.Z_Far);
 	}
+	this->SetUniformFloat("z_near", camera.Z_Near);
+	this->SetUniformFloat("z_far", camera.Z_Far);
 }
 
 void ShaderProgram::Apply(std::vector<Light*>& lights)
@@ -172,8 +172,6 @@ void ShaderProgram::Apply(GBuffer& g_buffer)
 	this->Apply(g_buffer.gNormal, "g_buffer.gNormal");
 	this->Apply(g_buffer.gDiffuse, "g_buffer.gDiffuse");
 	this->Apply(g_buffer.gSpecular, "g_buffer.gSpecular");
-	this->Apply(g_buffer.gViewPosition, "g_buffer.gViewPosition");
-	this->Apply(g_buffer.gViewNormal, "g_buffer.gViewNormal");
 }
 
 void ShaderProgram::Apply(Material& material)

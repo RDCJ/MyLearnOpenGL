@@ -205,9 +205,10 @@ int main()
 	ShaderProgram* gaussian_blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Gaussian_Blur.frag");
 	ShaderProgram* hdr_bloom_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/HDR_Bloom.frag");
 
-	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP_View.vert", "./Shader/GBuffer.frag");
+	ShaderProgram* GBuffer_shader = new ShaderProgram("./Shader/MVP.vert", "./Shader/GBuffer.frag");
 	ShaderProgram* phong_GBuffer_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/Blinn_Phong_GBuffer.frag");
 	ShaderProgram* RedChannel_Gray_Shader = new ShaderProgram("./Shader/simple.vert", "./Shader/RedChannel_Gray.frag");
+	ShaderProgram* GBuffer_view_shader = new ShaderProgram("./Shader/MVP_view.vert", "./Shader/GBuffer.frag");
 
 	Material empty_material;
 
@@ -542,7 +543,7 @@ int main()
 	SSAO::Init();
 	SSAO ssao(ScreenWidth, ScreenHeight);
 	int ssao_kernel_size = 64;
-	float ssao_radius = 1;
+	float ssao_radius = 0.2;
 	#pragma endregion
 
 
@@ -622,37 +623,37 @@ int main()
 		
 		g_buffer.BindSelf();
 		g_buffer.UpdateViewport();
-		GLuint attachments1[6] = {
+		GLuint attachments1[4] = {
 			GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, 
-			GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5
+			GL_COLOR_ATTACHMENT3
 		};
-		glDrawBuffers(6, attachments1);
+		glDrawBuffers(4, attachments1);
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 		
-		GBuffer_shader->Use();
-		GBuffer_shader->Apply(*camera, true, false);
+		GBuffer_view_shader->Use();
+		GBuffer_view_shader->Apply(*camera, true, false);
 
 		Transform tf(glm::vec3(0, 0, 4), glm::vec3(0.1f));
 		tf.rotate_axis = glm::vec3(1, 0, 0);
 		tf.rotate_angle = -90;
-		GBuffer_shader->Apply(tf);
-		nanosuit.Draw(*GBuffer_shader);
+		GBuffer_view_shader->Apply(tf);
+		nanosuit.Draw(*GBuffer_view_shader);
 
 		for (int i = 0; i < 10; i++)
 		{
 			Transform box_tf(cubePositions[i], glm::vec3(1), cube_rotate_axis[i], cube_rotate_angle[i]);
-			GBuffer_shader->Apply(box_tf);
-			GBuffer_shader->Apply(cube_material);
-			cube_mesh.Draw(*GBuffer_shader);
+			GBuffer_view_shader->Apply(box_tf);
+			GBuffer_view_shader->Apply(cube_material);
+			cube_mesh.Draw(*GBuffer_view_shader);
 		}
 
 		Transform box_tf(glm::vec3(0, -0.6, 3.5), glm::vec3(1));
-		GBuffer_shader->Apply(box_tf);
-		GBuffer_shader->Apply(cube_material);
-		cube_mesh.Draw(*GBuffer_shader);
+		GBuffer_view_shader->Apply(box_tf);
+		GBuffer_view_shader->Apply(cube_material);
+		cube_mesh.Draw(*GBuffer_view_shader);
 		
 		GLuint attachments2[1] = {GL_COLOR_ATTACHMENT0};
 		glDrawBuffers(1, attachments2);
@@ -661,7 +662,7 @@ int main()
 		{
 			ssao.SSAOFrameBuffer.BindSelf();
 			ssao.SSAOFrameBuffer.UpdateViewport();
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			SSAO::shader->Use();
 			SSAO::shader->Apply(g_buffer);
 			SSAO::shader->Apply(*SSAO::Noise, "SSAONoise");

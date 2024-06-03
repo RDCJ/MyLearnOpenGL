@@ -14,21 +14,16 @@ uniform mat4 model;
 uniform mat3 NormalMatrix;
 
 out vec3 Normal;
-out vec3 ViewNormal;
 out vec3 FragPos;
-out vec3 ViewFragPos;
 out vec2 TexCoord;
 
 void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
-
     // 需要世界空间中进行所有的光照计算，因此我们需要一个在世界空间中的顶点位置。
     // 可以通过把顶点位置属性乘以模型矩阵来把它变换到世界空间坐标
-    FragPos = vec3(model * vec4(aPos, 1.0));
-    ViewFragPos = vec3(view * model * vec4(aPos, 1.0));
+    FragPos = vec3(view * model * vec4(aPos, 1.0));
     // 法线矩阵
-    Normal = NormalMatrix * aNormal;
-    ViewNormal = transpose(inverse(mat3(view * model))) * aNormal;
+    Normal = transpose(inverse(mat3(view * model))) * aNormal;
     TexCoord = aTexCoord;
 }

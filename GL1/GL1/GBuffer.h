@@ -20,14 +20,5 @@ class GBuffer: public FrameBuffer
 		///  镜面缓冲
 		/// </summary>
 		Texture2D gSpecular;
-		/// <summary>
-		/// 观察空间下的位置缓冲
-		/// </summary>
-		Texture2D gViewPosition;
-		/// <summary>
-		/// 观察空间下的法线缓冲
-		/// </summary>
-		Texture2D gViewNormal;
-
 };
 
