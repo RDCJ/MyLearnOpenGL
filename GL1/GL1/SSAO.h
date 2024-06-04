@@ -20,11 +20,13 @@ class SSAO
 		static Texture2D* Noise;
 
 		static ShaderProgram* shader;
+		static ShaderProgram* blur_shader;
 		static void Init();
 
 		SSAO(int width, int height);
 
 		FrameBuffer SSAOFrameBuffer;
+		FrameBuffer SSAOBlurBuffer;
 
 	private:
 		static void InitSSAOKernel();

@@ -5,8 +5,9 @@
 std::vector<glm::vec3> SSAO::Kernel;
 Texture2D* SSAO::Noise;
 ShaderProgram* SSAO::shader;
+ShaderProgram* SSAO::blur_shader;
 
-SSAO::SSAO(int width, int height): SSAOFrameBuffer(width, height)
+SSAO::SSAO(int width, int height): SSAOFrameBuffer(width, height), SSAOBlurBuffer(width, height)
 {
 	if (Kernel.size() <= 0)
 	{
@@ -17,6 +18,7 @@ SSAO::SSAO(int width, int height): SSAOFrameBuffer(width, height)
 		{GL_TEXTURE_MAG_FILTER, GL_NEAREST}
 	};
 	SSAOFrameBuffer.AddTexture2D(GL_RED, GL_RGB, GL_FLOAT, 0, params);
+	SSAOBlurBuffer.AddTexture2D(GL_RED, GL_RGB, GL_FLOAT, 0, params);
 }
 
 inline void SSAO::Init()
@@ -24,6 +26,7 @@ inline void SSAO::Init()
 	InitSSAOKernel();
 	InitSSAONoise();
 	SSAO::shader = new ShaderProgram("./Shader/simple.vert", "./Shader/SSAO.frag");
+	SSAO::blur_shader = new ShaderProgram("./Shader/simple.vert", "./Shader/SSAO_Blur.frag");
 }
 
 inline void SSAO::InitSSAOKernel()

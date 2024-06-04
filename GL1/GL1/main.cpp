@@ -662,7 +662,7 @@ int main()
 		{
 			ssao.SSAOFrameBuffer.BindSelf();
 			ssao.SSAOFrameBuffer.UpdateViewport();
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			SSAO::shader->Use();
 			SSAO::shader->Apply(g_buffer);
 			SSAO::shader->Apply(*SSAO::Noise, "SSAONoise");
@@ -676,11 +676,18 @@ int main()
 			SSAO::shader->Apply(*camera, true, false);
 			square_mesh.Draw(*SSAO::shader);
 
+			ssao.SSAOBlurBuffer.BindSelf();
+			ssao.SSAOBlurBuffer.UpdateViewport();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			SSAO::blur_shader->Use();
+			SSAO::blur_shader->Apply(*ssao.SSAOFrameBuffer.color_buffer, "tex");
+			square_mesh.Draw(*SSAO::blur_shader);
+
 			GLObject::Unbind<FrameBuffer>();
 			glViewport(0, 0, ScreenWidth, ScreenHeight);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			RedChannel_Gray_Shader->Use();
-			RedChannel_Gray_Shader->Apply(*ssao.SSAOFrameBuffer.color_buffer, "tex");
+			RedChannel_Gray_Shader->Apply(*ssao.SSAOBlurBuffer.color_buffer, "tex");
 			square_mesh.Draw(*RedChannel_Gray_Shader);
 		}
 		// 
