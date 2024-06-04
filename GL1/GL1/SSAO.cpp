@@ -5,7 +5,7 @@
 std::vector<glm::vec3> SSAO::Kernel;
 Texture2D* SSAO::Noise;
 ShaderProgram* SSAO::shader;
-ShaderProgram* SSAO::blur_shader;
+ShaderProgram* SSAO::blur_shader = nullptr;
 
 SSAO::SSAO(int width, int height): SSAOFrameBuffer(width, height), SSAOBlurBuffer(width, height)
 {

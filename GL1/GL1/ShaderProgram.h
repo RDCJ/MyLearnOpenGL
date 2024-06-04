@@ -123,8 +123,6 @@ class ShaderProgram
 		/// <param name="g_buffer"></param>
 		void Apply(GBuffer& g_buffer);
 
-
-
 #pragma region Set Uniform
 		void SetUniformBool(const std::string& name, bool value) const
 		{
